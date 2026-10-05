@@ -465,6 +465,25 @@ class StreamResolutionTest {
 
         assertEquals("20:9", adjusted.aspectRatio)
         assertEquals("2400x1080", adjusted.resolution)
+        assertFalse(adjusted.requiresNativeAndroidCloudMatchMode())
+        assertTrue(adjusted.requiresNativeDesktopCloudMatchMode())
+
+        val adjustedHd = StreamSettings(resolution = "1600x720", aspectRatio = "20:9")
+            .withResolutionAllowed(freeSubscription, null)
+        assertEquals("20:9", adjustedHd.aspectRatio)
+        assertEquals("1600x720", adjustedHd.resolution)
+        assertTrue(adjustedHd.requiresNativeAndroidCloudMatchMode())
+        assertFalse(adjustedHd.requiresNativeDesktopCloudMatchMode())
+    }
+
+    @Test
+    fun resolutionTierForHeightResolves1080pTiersCorrectly() {
+        // Height 1080 should map to the "1080" tier (1920x1080), not "1050" tier
+        val normalized = normalizeStreamResolutionForAspect("2400x1080", "16:9")
+        assertEquals("1920x1080", normalized)
+
+        val normalizedTo20By9 = normalizeStreamResolutionForAspect("1920x1080", "20:9")
+        assertEquals("2400x1080", normalizedTo20By9)
     }
 
     @Test

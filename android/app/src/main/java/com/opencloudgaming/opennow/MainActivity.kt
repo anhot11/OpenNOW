@@ -88,6 +88,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         enableEdgeToEdge()
         defaultRequestedOrientation = requestedOrientation
         volumeControlStream = AudioManager.STREAM_MUSIC
@@ -501,6 +505,12 @@ class MainActivity : ComponentActivity() {
     /** Reapplies only immersive bars; pointer-icon traversal and window flags are state changes. */
     private fun applyStreamSystemBars(active: Boolean) {
         val immersive = active && !streamPanelExpanded
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val desiredCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            if (window.attributes.layoutInDisplayCutoutMode != desiredCutoutMode) {
+                window.attributes.layoutInDisplayCutoutMode = desiredCutoutMode
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             WindowCompat.setDecorFitsSystemWindows(window, false)
             window.insetsController?.let { controller ->

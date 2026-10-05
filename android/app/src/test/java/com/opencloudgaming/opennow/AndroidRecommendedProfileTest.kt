@@ -132,6 +132,25 @@ class AndroidRecommendedProfileTest {
     }
 
     @Test
+    fun twentyByNinePhoneWithWindowInsetsSelectsNativeTwentyByNineResolution() {
+        val recommendation = recommendedAndroidStreamProfile(
+            displayWidth = 2340, // 2400 minus typical system bar insets
+            displayHeight = 1080,
+            processorCount = 8,
+            totalMemoryMiB = 6_144,
+            androidTvProfile = false,
+            report = codecReport(
+                h264Max = 3840 to 2160,
+                h265Max = 3840 to 2160,
+            ),
+        )
+
+        assertEquals("20:9", recommendation.stream.aspectRatio)
+        assertEquals("2400x1080", recommendation.stream.resolution)
+        assertEquals(VideoCodec.H265, recommendation.stream.codec)
+    }
+
+    @Test
     fun customProfileListsOnlyPerformanceChoicesAboveRecommendation() {
         val recommended = StreamSettings(
             resolution = "1920x1080",

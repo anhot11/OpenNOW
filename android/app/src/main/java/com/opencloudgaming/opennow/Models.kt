@@ -756,8 +756,13 @@ internal fun streamResolutionPixels(settings: StreamSettings): Pair<Int, Int> {
     return parseResolutionPixels(normalizeStreamResolutionForAspect(settings.resolution, settings.aspectRatio))
 }
 
-internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean =
-    streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION)
+internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean {
+    if (requiresNativeDesktopCloudMatchMode()) return false
+    val (width, _) = streamResolutionPixels(this)
+    return streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION) ||
+        aspectRatio in setOf("19.5:9", "20:9") ||
+        (aspectRatio == "21:9" && width <= 1680)
+}
 
 internal fun StreamSettings.requiresNativeDesktopCloudMatchMode(): Boolean {
     val (width, height) = streamResolutionPixels(this)
@@ -1350,7 +1355,7 @@ private fun resolutionTierForHeight(height: Int): String =
         height >= 2600 -> "2880"
         height >= 2000 -> "2160"
         height >= 1320 -> "1440"
-        height >= 1120 -> "1080"
+        height >= 1060 -> "1080"
         height >= 975 -> "1050"
         height >= 850 -> "900"
         height >= 800 -> "834"

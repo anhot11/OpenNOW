@@ -24,9 +24,10 @@ internal fun recommendedAndroidStreamProfile(
     context: Context,
     report: RuntimeCodecReport?,
 ): AndroidDeviceRecommendation {
+    val physicalDisplay = context.physicalStreamDisplayResolution()
     val metrics = context.resources.displayMetrics
-    val displayWidth = maxOf(metrics.widthPixels, metrics.heightPixels).coerceAtLeast(1)
-    val displayHeight = minOf(metrics.widthPixels, metrics.heightPixels).coerceAtLeast(1)
+    val displayWidth = physicalDisplay?.first ?: maxOf(metrics.widthPixels, metrics.heightPixels).coerceAtLeast(1)
+    val displayHeight = physicalDisplay?.second ?: minOf(metrics.widthPixels, metrics.heightPixels).coerceAtLeast(1)
     val processorCount = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
     val totalMemoryMiB = runCatching {
         val info = ActivityManager.MemoryInfo()
@@ -87,8 +88,14 @@ internal fun recommendedAndroidStreamProfile(
         abs(deviceAspect - optionAspect)
     } ?: "16:9"
     val choices = streamResolutionChoicesForAspect(aspectRatio)
+    val widthTolerance = (safeDisplayWidth * 0.05).toInt()
+    val heightTolerance = (safeDisplayHeight * 0.05).toInt()
     val displaySizedChoices = choices
-        .filter { it.width <= safeDisplayWidth && it.height <= safeDisplayHeight && it.height <= maxHeight }
+        .filter {
+            it.width <= safeDisplayWidth + widthTolerance &&
+                it.height <= safeDisplayHeight + heightTolerance &&
+                it.height <= maxHeight
+        }
         .ifEmpty { choices.filter { it.height <= maxHeight } }
         .sortedByDescending { it.width * it.height }
     val fallbackChoice = streamResolutionChoicesForAspect("16:9").first()
