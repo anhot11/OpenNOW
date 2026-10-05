@@ -19,7 +19,11 @@ if not cmake:
     # its host CMake for an Android cross-build.
     candidates = list((ndk.parents[1] / 'cmake').glob('*/bin/cmake' + ('.exe' if os.name == 'nt' else '')))
     if candidates:
-        cmake = str(max(candidates, key=lambda p: tuple(int(v) for v in p.parents[1].name.split('.') if v.isdigit())))
+        # Prefer CMake 3.x over CMake 4.x+ because bundled dependencies (e.g. audiopus_sys/opus)
+        # require CMake < 3.5 compatibility which was removed in CMake 4.0+.
+        v3_candidates = [c for c in candidates if [int(v) for v in c.parents[1].name.split('.') if v.isdigit()][:1] == [3]]
+        chosen = max(v3_candidates, key=lambda p: tuple(int(v) for v in p.parents[1].name.split('.') if v.isdigit())) if v3_candidates else max(candidates, key=lambda p: tuple(int(v) for v in p.parents[1].name.split('.') if v.isdigit()))
+        cmake = str(chosen)
 if not cmake:
     cmake = shutil.which('cmake')
 if not cmake:
@@ -48,6 +52,7 @@ for abi, target, clang_target in [
     env['OPUS_NO_PKG'] = '1'
     env['OPENNOW_ANDROID_NDK'] = str(ndk)
     env['OPENNOW_ANDROID_ABI'] = abi
+    env['CMAKE_POLICY_VERSION_MINIMUM'] = '3.5'
     env['CMAKE_TOOLCHAIN_FILE'] = str(root / 'android-toolchain.cmake')
     env['CARGO_TARGET_DIR'] = str(root / 'target')
     env['RUSTFLAGS'] = env.get('RUSTFLAGS', '') + ' -C link-arg=-Wl,-z,max-page-size=16384'
