@@ -916,7 +916,7 @@ class GfnApiTest {
     }
 
     @Test
-    fun claimRequestSuppressesHdrColorMetadataWhileKillSwitchIsActive() {
+    fun claimRequestEmitsHdrColorMetadataWhenHdrEnabled() {
         val settings = StreamSettings(
             resolution = "1920x1080",
             codec = VideoCodec.H265,
@@ -931,14 +931,14 @@ class GfnApiTest {
             .getValue("clientRequestMonitorSettings").jsonArray.single().jsonObject
         val features = sessionRequestData.getValue("requestedStreamingFeatures").jsonObject
 
-        assertEquals(0, monitor.getValue("sdrHdrMode").jsonPrimitive.int)
-        assertEquals(JsonNull, monitor.getValue("displayData"))
-        assertEquals(false, features.getValue("trueHdr").jsonPrimitive.boolean)
+        assertEquals(1, monitor.getValue("sdrHdrMode").jsonPrimitive.int)
+        assertNotNull(monitor.getValue("displayData"))
+        assertEquals(true, features.getValue("trueHdr").jsonPrimitive.boolean)
         assertEquals(10, features.getValue("bitDepth").jsonPrimitive.int)
         assertEquals(2, features.getValue("sdrColorSpace").jsonPrimitive.int)
-        assertEquals(0, features.getValue("hdrColorSpace").jsonPrimitive.int)
-        assertEquals(0, sessionRequestData.getValue("sdrHdrMode").jsonPrimitive.int)
-        assertEquals(JsonNull, sessionRequestData.getValue("clientDisplayHdrCapabilities"))
+        assertEquals(4, features.getValue("hdrColorSpace").jsonPrimitive.int)
+        assertEquals(1, sessionRequestData.getValue("sdrHdrMode").jsonPrimitive.int)
+        assertNotNull(sessionRequestData.getValue("clientDisplayHdrCapabilities"))
     }
 
     @Test
@@ -1258,7 +1258,7 @@ class GfnApiTest {
     }
 
     @Test
-    fun shieldFourKHdrClaimUsesDesktopAllocationButSuppressesHdr() {
+    fun shieldFourKHdrClaimUsesDesktopAllocationWithHdr() {
         val settings = StreamSettings(
             resolution = "3840x2160",
             aspectRatio = "16:9",
@@ -1286,12 +1286,12 @@ class GfnApiTest {
         assertEquals(3840, monitor.getValue("widthInPixels").jsonPrimitive.int)
         assertEquals(2160, monitor.getValue("heightInPixels").jsonPrimitive.int)
         assertEquals(60, monitor.getValue("framesPerSecond").jsonPrimitive.int)
-        assertEquals(0, monitor.getValue("sdrHdrMode").jsonPrimitive.int)
+        assertEquals(1, monitor.getValue("sdrHdrMode").jsonPrimitive.int)
         assertEquals(0, monitor.getValue("monitorId").jsonPrimitive.int)
         assertEquals(100, monitor.getValue("dpi").jsonPrimitive.int)
         assertEquals(10, features.getValue("bitDepth").jsonPrimitive.int)
-        assertEquals(false, features.getValue("trueHdr").jsonPrimitive.boolean)
-        assertEquals(0, features.getValue("hdrColorSpace").jsonPrimitive.int)
+        assertEquals(true, features.getValue("trueHdr").jsonPrimitive.boolean)
+        assertEquals(4, features.getValue("hdrColorSpace").jsonPrimitive.int)
     }
 
     @Test

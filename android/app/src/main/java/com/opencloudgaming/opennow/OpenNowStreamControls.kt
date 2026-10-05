@@ -1283,17 +1283,15 @@ internal fun StreamControlsPanel(
             }
             item {
                 ControlSection(stringResource(R.string.stream_panel_section_display)) {
-                    if (advancedControlsVisible) {
-                        ControlSwitchRow(
-                            label = stringResource(R.string.stream_panel_stretch_to_fit),
-                            checked = settings.stretchStreamToFit,
-                            onCheckedChange = {
-                                onButtonTone()
-                                onStretchToFitToggle()
-                            },
-                            value = onOffLabel(settings.stretchStreamToFit),
-                        )
-                    }
+                    ControlSwitchRow(
+                        label = stringResource(R.string.stream_panel_stretch_to_fit),
+                        checked = settings.stretchStreamToFit,
+                        onCheckedChange = {
+                            onButtonTone()
+                            onStretchToFitToggle()
+                        },
+                        value = onOffLabel(settings.stretchStreamToFit),
+                    )
                     ControlSwitchRow(
                         label = stringResource(R.string.stream_panel_audio),
                         checked = !audioMuted,

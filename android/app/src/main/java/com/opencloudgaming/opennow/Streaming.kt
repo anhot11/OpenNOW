@@ -885,6 +885,7 @@ class NativeStreamClient(
         updateRendererSettings(rendererSettings)
         updateHapticsSettings(vibrationEnabled, hapticsOutput)
         NativeStreamInputRouter.setStretchToFit(stretchToFit)
+        renderer?.stretchToFit = stretchToFit
     }
 
     fun updateControllerMouseAssistAutoArm(enabled: Boolean) {

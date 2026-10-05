@@ -435,11 +435,11 @@ class SdpToolsTest {
     }
 
     @Test
-    fun nvstSdpDisablesHdrWhileAndroidKillSwitchIsActive() {
+    fun nvstSdpEnablesHdrForHdrStream() {
         val nvst = buildNvstSdp(StreamSettings(codec = VideoCodec.H265, hdrEnabled = true))
 
-        assertFalse(nvst.contains("a=video.dx9EnableHdr:1"))
-        assertTrue(nvst.contains("a=video.dx9EnableHdr:0"))
+        assertTrue(nvst.contains("a=video.dx9EnableHdr:1"))
+        assertFalse(nvst.contains("a=video.dx9EnableHdr:0"))
         assertTrue(nvst.contains("a=video.bitDepth:10"))
     }
 

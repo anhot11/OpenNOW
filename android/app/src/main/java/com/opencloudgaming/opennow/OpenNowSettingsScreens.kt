@@ -904,6 +904,7 @@ private fun SettingsContent(
                 SettingSwitch(
                     label = stringResource(R.string.settings_stretch_stream_to_fit),
                     checked = settings.stretchStreamToFit,
+                    description = stringResource(R.string.settings_stretch_stream_to_fit_desc),
                 ) { enabled ->
                     viewModel.updateSettings(
                         settings.copy(
@@ -1002,10 +1003,9 @@ private fun SettingsContent(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                val hdrDeviceAvailable by produceState(false, settingsAvailableStream.codec,
-                    settingsAvailableStream.resolution, settingsAvailableStream.fps) {
+                val hdrDeviceAvailable by produceState(false, settingsAvailableStream.resolution, settingsAvailableStream.fps) {
                     value = withContext(Dispatchers.Default) {
-                        settingsAvailableStream.copy(hdrEnabled = true).withHdrDeviceSupport(context).hdrEnabled
+                        settingsAvailableStream.copy(codec = VideoCodec.H265, hdrEnabled = true).withHdrDeviceSupport(context).hdrEnabled
                     }
                 }
                 val hdrAvailable = hasHdrStreamingPlan(state.subscriptionInfo, fallbackMembershipTier) && hdrDeviceAvailable
@@ -1017,6 +1017,7 @@ private fun SettingsContent(
                 ) { enabled ->
                     viewModel.updateStreamSettings { s ->
                         s.copy(
+                            codec = if (enabled && s.codec != VideoCodec.H265) VideoCodec.H265 else s.codec,
                             hdrEnabled = enabled,
                             colorQuality = if (enabled) ColorQuality.EightBit420 else s.colorQuality,
                         ).withCodecColorCompatibility()

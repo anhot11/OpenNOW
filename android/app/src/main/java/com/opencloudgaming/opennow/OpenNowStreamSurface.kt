@@ -1741,7 +1741,7 @@ private fun StreamVideoSurface(
             0f
         }
     }
-    val rendererModifier = if (viewportAspectRatio <= 0f) {
+    val rendererModifier = if (viewportAspectRatio <= 0f || stretchToFit) {
         Modifier.fillMaxSize()
     } else if (viewportAspectRatio > streamAspectRatio) {
         // Screen is wider than stream (e.g. 2400×1080 screen, 1920×1080 stream).
@@ -1862,11 +1862,13 @@ private fun StreamVideoSurface(
                         isFocusable = false
                         isFocusableInTouchMode = false
                         hideAndroidPointerTree()
+                        this.stretchToFit = stretchToFit
                         setPresentationScale(stretchScale.first, stretchScale.second)
                     }
                 },
                 update = { renderer ->
                     client.applyLiveSettings(settings, vibrationEnabled, hapticsOutput, stretchToFit)
+                    renderer.stretchToFit = stretchToFit
                     renderer.setPresentationScale(stretchScale.first, stretchScale.second)
                     renderer.isFocusable = false
                     renderer.isFocusableInTouchMode = false

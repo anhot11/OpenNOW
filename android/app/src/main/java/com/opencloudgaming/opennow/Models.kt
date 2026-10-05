@@ -1113,9 +1113,8 @@ internal fun monthlyHoursRemainingFor(subscriptionInfo: SubscriptionInfo?, fallb
     return (limit - (subscriptionInfo?.usedHours ?: 0.0)).coerceAtLeast(0.0)
 }
 
-/** Temporary Android-wide kill switch. Keep the HDR implementation dormant until it is safe to
- * re-enable after device validation. */
-internal const val ANDROID_HDR_STREAMING_ENABLED = false
+/** Android HDR10 streaming support flag. */
+internal const val ANDROID_HDR_STREAMING_ENABLED = true
 
 internal fun StreamSettings.withHdrAllowed(subscriptionInfo: SubscriptionInfo?, fallbackMembershipTier: String?): StreamSettings =
     if (hdrEnabled && (!ANDROID_HDR_STREAMING_ENABLED || !hasHdrStreamingPlan(subscriptionInfo, fallbackMembershipTier))) {
@@ -1129,7 +1128,7 @@ internal fun StreamSettings.withHdrAllowed(subscriptionInfo: SubscriptionInfo?, 
 internal fun StreamSettings.hdrAvailableForAndroid(androidTvProfile: Boolean): Boolean {
     if (!ANDROID_HDR_STREAMING_ENABLED) return false
     val (width, height) = streamResolutionPixels(this)
-    return codec == VideoCodec.H265 && fps <= 60 && width <= 3840 && height <= 2160
+    return codec == VideoCodec.H265 && fps <= 120 && width <= 3840 && height <= 2160
 }
 
 internal fun StreamSettings.withAndroidHdrCompatibility(androidTvProfile: Boolean): StreamSettings =
@@ -2363,10 +2362,11 @@ private fun StreamSettings.withStableAndroidCloudMatchProfile(): StreamSettings 
     } else {
         MAX_ULTIMATE_STREAM_FPS
     }
+    val (resWidth, resHeight) = parseResolutionPixels(normalizedResolution)
     return copy(
         resolution = normalizedResolution,
         fps = minOf(fps, geometryCompatibleFps),
-        hdrEnabled = hdrEnabled && codec != VideoCodec.H264,
+        hdrEnabled = hdrEnabled && codec == VideoCodec.H265 && fps <= 120 && resWidth <= 3840 && resHeight <= 2160,
     )
 }
 

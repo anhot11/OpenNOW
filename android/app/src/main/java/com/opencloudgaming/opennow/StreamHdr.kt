@@ -26,8 +26,16 @@ internal object StreamHdr {
             ?: (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
         val capabilities = display?.hdrCapabilities ?: return null
         if (Display.HdrCapabilities.HDR_TYPE_HDR10 !in capabilities.supportedHdrTypes) return null
-        return hdrDisplayProfile(capabilities.desiredMaxLuminance, capabilities.desiredMinLuminance,
-            capabilities.desiredMaxAverageLuminance)
+        val profile = hdrDisplayProfile(
+            capabilities.desiredMaxLuminance,
+            capabilities.desiredMinLuminance,
+            capabilities.desiredMaxAverageLuminance,
+        )
+        if (profile != null) return profile
+        // Many Android devices have HDR10 OLED displays and hardware decoders, but their vendor
+        // display HAL returns -1.0 for desiredMaxLuminance instead of reading panel EDID.
+        // Fall back to standard HDR10 reference mastering luminance values.
+        return HdrDisplayProfile(maxLuminance = 1000f, minLuminance = 0.005f, maxAverageLuminance = 400f)
     }
 
     fun decoderName(width: Int, height: Int, fps: Int): String? {

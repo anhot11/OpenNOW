@@ -700,18 +700,18 @@ class StreamResolutionTest {
     }
 
     @Test
-    fun hdrKillSwitchOverridesPlanEligibility() {
+    fun hdrPlanEligibility() {
         val requested = StreamSettings(codec = VideoCodec.H265, hdrEnabled = true)
 
         assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "FREE"), null).hdrEnabled)
-        assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PERFORMANCE"), null).hdrEnabled)
+        assertEquals(true, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PERFORMANCE"), null).hdrEnabled)
         assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PRIORITY"), null).hdrEnabled)
-        assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "ULTIMATE"), null).hdrEnabled)
+        assertEquals(true, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "ULTIMATE"), null).hdrEnabled)
         assertEquals(true, hasHdrStreamingPlan(null, "PERFORMANCE"))
     }
 
     @Test
-    fun handheldHdrTransportIsDisabled() {
+    fun handheldHdrTransportIsEnabledForCompatibleProfiles() {
         val adjusted = StreamSettings(
             resolution = "1920x1080",
             fps = 60,
@@ -720,12 +720,12 @@ class StreamResolutionTest {
             hdrEnabled = true,
         ).withAndroidHdrCompatibility(androidTvProfile = false)
 
-        assertEquals(false, adjusted.hdrEnabled)
-        assertEquals(ColorQuality.TenBit420, adjusted.colorQuality)
+        assertEquals(true, adjusted.hdrEnabled)
+        assertEquals(ColorQuality.EightBit420, adjusted.colorQuality)
     }
 
     @Test
-    fun androidTvHdrTransportIsDisabledForEveryProfile() {
+    fun androidTvHdrTransportChecks() {
         val supported = StreamSettings(
             resolution = "3840x2160",
             fps = 60,
@@ -734,8 +734,8 @@ class StreamResolutionTest {
             hdrEnabled = true,
         )
 
-        assertEquals(false, supported.hdrAvailableForAndroid(androidTvProfile = true))
-        assertEquals(false, supported.copy(fps = 120).hdrAvailableForAndroid(androidTvProfile = true))
+        assertEquals(true, supported.hdrAvailableForAndroid(androidTvProfile = true))
+        assertEquals(true, supported.copy(fps = 120).hdrAvailableForAndroid(androidTvProfile = true))
         assertEquals(false, supported.copy(resolution = "5120x2880").hdrAvailableForAndroid(androidTvProfile = true))
         assertEquals(false, supported.copy(codec = VideoCodec.H264).hdrAvailableForAndroid(androidTvProfile = true))
     }
