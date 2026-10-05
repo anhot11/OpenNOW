@@ -9,7 +9,7 @@ on:
 
 concurrency:
   group: android-build-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -54,26 +54,6 @@ jobs:
         working-directory: android
         run: |
           ./gradlew :app:assembleRelease :app:assembleDebug --stacktrace
-
-      - name: Sign Release APK if Unsigned
-        shell: bash
-        run: |
-          RELEASE_DIR="android/app/build/outputs/apk/release"
-          if [ -d "$RELEASE_DIR" ]; then
-            for f in "$RELEASE_DIR"/*-unsigned.apk; do
-              if [ -f "$f" ]; then
-                SIGNED_APK="${f/-unsigned.apk/.apk}"
-                echo "Signing $f -> $SIGNED_APK with debug key..."
-                # Create debug keystore if not present
-                mkdir -p ~/.android
-                if [ ! -f ~/.android/debug.keystore ]; then
-                  keytool -genkey -v -keystore ~/.android/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-                fi
-                jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ~/.android/debug.keystore -storepass android "$f" androiddebugkey
-                cp -f "$f" "$SIGNED_APK"
-              fi
-            done
-          fi
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
