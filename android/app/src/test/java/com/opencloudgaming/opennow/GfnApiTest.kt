@@ -15,6 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -933,12 +934,14 @@ class GfnApiTest {
 
         assertEquals(1, monitor.getValue("sdrHdrMode").jsonPrimitive.int)
         assertNotNull(monitor.getValue("displayData"))
+        assertFalse(monitor.getValue("displayData") is JsonNull)
         assertEquals(true, features.getValue("trueHdr").jsonPrimitive.boolean)
         assertEquals(10, features.getValue("bitDepth").jsonPrimitive.int)
         assertEquals(2, features.getValue("sdrColorSpace").jsonPrimitive.int)
         assertEquals(4, features.getValue("hdrColorSpace").jsonPrimitive.int)
         assertEquals(1, sessionRequestData.getValue("sdrHdrMode").jsonPrimitive.int)
         assertNotNull(sessionRequestData.getValue("clientDisplayHdrCapabilities"))
+        assertFalse(sessionRequestData.getValue("clientDisplayHdrCapabilities") is JsonNull)
     }
 
     @Test
