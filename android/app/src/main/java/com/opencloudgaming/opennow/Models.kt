@@ -1231,12 +1231,7 @@ private fun customStreamResolutionOrNull(resolution: String): Pair<Int, Int>? =
         isKnownStreamResolution(resolution) || resolution in UNSUPPORTED_LEGACY_STREAM_RESOLUTIONS
     }
 
-private val UNSUPPORTED_LEGACY_STREAM_RESOLUTIONS = setOf(
-    "1600x720",
-    "2400x1080",
-    "3200x1440",
-    "4800x2160",
-)
+private val UNSUPPORTED_LEGACY_STREAM_RESOLUTIONS = emptySet<String>()
 
 private fun customResolutionAllowedForPlan(
     resolution: Pair<Int, Int>,
@@ -1271,31 +1266,35 @@ internal val STREAM_RESOLUTION_OPTIONS = listOf(
     StreamResolutionOption("1600x1200", "4:3", "1080"),
     StreamResolutionOption("1280x1024", "5:4", "1050"),
     StreamResolutionOption(PORTAL_STREAM_RESOLUTION, "19.5:9", "720"),
+    StreamResolutionOption("1600x720", "20:9", "720"),
     StreamResolutionOption("1376x590", "21:9", "720"),
     StreamResolutionOption("1680x720", "21:9", "720"),
     StreamResolutionOption("2340x1080", "19.5:9", "1080", StreamResolutionPlan.Priority),
+    StreamResolutionOption("2400x1080", "20:9", "1080"),
     StreamResolutionOption("2560x1080", "21:9", "1080", StreamResolutionPlan.Priority),
     StreamResolutionOption("3840x1080", "32:9", "1080", StreamResolutionPlan.Priority),
     StreamResolutionOption("2560x1440", "16:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("2560x1600", "16:10", "1440", StreamResolutionPlan.Priority),
+    StreamResolutionOption("3200x1440", "20:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("3440x1440", "21:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("5120x1440", "32:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("3840x1600", "24:10", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("3840x2160", "16:9", "2160", StreamResolutionPlan.Ultimate),
     StreamResolutionOption("3456x2160", "16:10", "2160", StreamResolutionPlan.Ultimate),
+    StreamResolutionOption("4800x2160", "20:9", "2160", StreamResolutionPlan.Ultimate),
     StreamResolutionOption("5120x2160", "21:9", "2160", StreamResolutionPlan.Ultimate),
     StreamResolutionOption("5120x2880", "16:9", "2880", StreamResolutionPlan.Ultimate),
 )
 
 private val PREFERRED_RESOLUTION_BY_TIER_AND_ASPECT = mapOf(
-    "720" to mapOf("16:9" to "1280x720", "16:10" to "1280x800", "4:3" to "1024x768", "19.5:9" to PORTAL_STREAM_RESOLUTION, "21:9" to "1680x720"),
+    "720" to mapOf("16:9" to "1280x720", "16:10" to "1280x800", "4:3" to "1024x768", "19.5:9" to PORTAL_STREAM_RESOLUTION, "20:9" to "1600x720", "21:9" to "1680x720"),
     "768" to mapOf("16:9" to "1366x768", "4:3" to "1024x768"),
     "834" to mapOf("4:3" to "1112x834"),
     "900" to mapOf("16:9" to "1600x900", "16:10" to "1440x900"),
     "1050" to mapOf("16:10" to "1680x1050", "5:4" to "1280x1024"),
-    "1080" to mapOf("16:9" to "1920x1080", "16:10" to "1920x1200", "4:3" to "1600x1200", "19.5:9" to "2340x1080", "21:9" to "2560x1080", "32:9" to "3840x1080"),
-    "1440" to mapOf("16:9" to "2560x1440", "16:10" to "2560x1600", "21:9" to "3440x1440", "24:10" to "3840x1600", "32:9" to "5120x1440"),
-    "2160" to mapOf("16:9" to "3840x2160", "16:10" to "3456x2160", "21:9" to "5120x2160"),
+    "1080" to mapOf("16:9" to "1920x1080", "16:10" to "1920x1200", "4:3" to "1600x1200", "19.5:9" to "2340x1080", "20:9" to "2400x1080", "21:9" to "2560x1080", "32:9" to "3840x1080"),
+    "1440" to mapOf("16:9" to "2560x1440", "16:10" to "2560x1600", "20:9" to "3200x1440", "21:9" to "3440x1440", "24:10" to "3840x1600", "32:9" to "5120x1440"),
+    "2160" to mapOf("16:9" to "3840x2160", "16:10" to "3456x2160", "20:9" to "4800x2160", "21:9" to "5120x2160"),
     "2880" to mapOf("16:9" to "5120x2880"),
 )
 

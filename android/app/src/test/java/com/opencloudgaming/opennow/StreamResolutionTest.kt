@@ -450,11 +450,21 @@ class StreamResolutionTest {
 
     @Test
     fun persistedUnsupportedAspectFallsBackToSupportedSixteenByNineMode() {
-        val adjusted = StreamSettings(resolution = "1600x720", aspectRatio = "20:9")
+        val adjusted = StreamSettings(resolution = "1600x720", aspectRatio = "18:9")
             .withResolutionAllowed(SubscriptionInfo(membershipTier = "FREE"), null)
 
         assertEquals("16:9", adjusted.aspectRatio)
         assertEquals("1280x720", adjusted.resolution)
+    }
+
+    @Test
+    fun twentyByNineAspectKeepsRequestedResolutionForFreeAndPriority() {
+        val freeSubscription = SubscriptionInfo(membershipTier = "FREE")
+        val adjusted = StreamSettings(resolution = "2400x1080", aspectRatio = "20:9")
+            .withResolutionAllowed(freeSubscription, null)
+
+        assertEquals("20:9", adjusted.aspectRatio)
+        assertEquals("2400x1080", adjusted.resolution)
     }
 
     @Test
@@ -573,7 +583,7 @@ class StreamResolutionTest {
         assertEquals(listOf("1024x768", "1112x834", "1600x1200"), streamResolutionOptionsForAspect("4:3"))
         assertEquals(listOf("1280x1024"), streamResolutionOptionsForAspect("5:4"))
         assertEquals(listOf("1376x640", "2340x1080"), streamResolutionOptionsForAspect("19.5:9"))
-        assertEquals(emptyList<String>(), streamResolutionOptionsForAspect("20:9"))
+        assertEquals(listOf("1600x720", "2400x1080", "3200x1440", "4800x2160"), streamResolutionOptionsForAspect("20:9"))
         assertEquals(listOf("1376x590", "1680x720", "2560x1080", "3440x1440", "5120x2160"), streamResolutionOptionsForAspect("21:9"))
         assertEquals(listOf("3840x1080", "5120x1440"), streamResolutionOptionsForAspect("32:9"))
     }
