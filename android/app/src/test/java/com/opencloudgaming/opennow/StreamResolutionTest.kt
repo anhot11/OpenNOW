@@ -705,9 +705,11 @@ class StreamResolutionTest {
 
         assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "FREE"), null).hdrEnabled)
         assertEquals(true, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PERFORMANCE"), null).hdrEnabled)
-        assertEquals(false, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PRIORITY"), null).hdrEnabled)
+        assertEquals(true, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "PRIORITY"), null).hdrEnabled)
         assertEquals(true, requested.withHdrAllowed(SubscriptionInfo(membershipTier = "ULTIMATE"), null).hdrEnabled)
         assertEquals(true, hasHdrStreamingPlan(null, "PERFORMANCE"))
+        assertEquals(true, hasHdrStreamingPlan(null, "PRIORITY"))
+        assertEquals(false, hasHdrStreamingPlan(null, "FREE"))
     }
 
     @Test
