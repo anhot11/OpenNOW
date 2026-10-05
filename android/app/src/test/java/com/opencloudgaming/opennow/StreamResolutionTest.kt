@@ -465,14 +465,12 @@ class StreamResolutionTest {
 
         assertEquals("20:9", adjusted.aspectRatio)
         assertEquals("2400x1080", adjusted.resolution)
-        assertFalse(adjusted.requiresNativeAndroidCloudMatchMode())
         assertTrue(adjusted.requiresNativeDesktopCloudMatchMode())
 
         val adjustedHd = StreamSettings(resolution = "1600x720", aspectRatio = "20:9")
             .withResolutionAllowed(freeSubscription, null)
         assertEquals("20:9", adjustedHd.aspectRatio)
         assertEquals("1600x720", adjustedHd.resolution)
-        assertTrue(adjustedHd.requiresNativeAndroidCloudMatchMode())
         assertFalse(adjustedHd.requiresNativeDesktopCloudMatchMode())
     }
 

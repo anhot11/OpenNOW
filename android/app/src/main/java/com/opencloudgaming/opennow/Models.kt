@@ -756,13 +756,8 @@ internal fun streamResolutionPixels(settings: StreamSettings): Pair<Int, Int> {
     return parseResolutionPixels(normalizeStreamResolutionForAspect(settings.resolution, settings.aspectRatio))
 }
 
-internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean {
-    if (requiresNativeDesktopCloudMatchMode()) return false
-    val (width, _) = streamResolutionPixels(this)
-    return streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION) ||
-        aspectRatio in setOf("19.5:9", "20:9") ||
-        (aspectRatio == "21:9" && width <= 1680)
-}
+internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean =
+    streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION)
 
 internal fun StreamSettings.requiresNativeDesktopCloudMatchMode(): Boolean {
     val (width, height) = streamResolutionPixels(this)

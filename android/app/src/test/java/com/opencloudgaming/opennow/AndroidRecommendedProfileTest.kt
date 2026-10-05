@@ -128,7 +128,7 @@ class AndroidRecommendedProfileTest {
 
         assertEquals("20:9", recommendation.stream.aspectRatio)
         assertEquals("2400x1080", recommendation.stream.resolution)
-        assertEquals(VideoCodec.H265, recommendation.stream.codec)
+        assertEquals(VideoCodec.H264, recommendation.stream.codec)
     }
 
     @Test
@@ -147,7 +147,7 @@ class AndroidRecommendedProfileTest {
 
         assertEquals("20:9", recommendation.stream.aspectRatio)
         assertEquals("2400x1080", recommendation.stream.resolution)
-        assertEquals(VideoCodec.H265, recommendation.stream.codec)
+        assertEquals(VideoCodec.H264, recommendation.stream.codec)
     }
 
     @Test
