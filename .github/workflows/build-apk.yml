@@ -55,7 +55,7 @@ jobs:
       - name: Build APKs (Release & Debug)
         working-directory: android
         run: |
-          ./gradlew :app:assembleRelease :app:assembleDebug --stacktrace
+          ./gradlew testDebugUnitTest :app:assembleRelease :app:assembleDebug --stacktrace
 
       - name: Upload APK Artifacts
         uses: actions/upload-artifact@v4
