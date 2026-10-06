@@ -203,6 +203,8 @@ data class StreamSettings(
     @kotlinx.serialization.Transient val hdrDisplay: HdrDisplayProfile? = null,
     val hdrMaxLuminanceNits: Int = 0,
     val trueHdrEnabled: Boolean = true,
+    val forceHdr: Boolean = false,
+    val forceResolution: Boolean = false,
     val region: String = "",
     val keyboardLayout: String = "en-US",
     val gameLanguage: String = "en_US",
@@ -231,6 +233,10 @@ data class StreamSettings(
 
 internal fun StreamSettings.withUserStreamOptionsFrom(source: StreamSettings): StreamSettings =
     copy(
+        forceHdr = source.forceHdr,
+        forceResolution = source.forceResolution,
+        hdrMaxLuminanceNits = source.hdrMaxLuminanceNits,
+        trueHdrEnabled = source.trueHdrEnabled,
         microphoneMode = source.microphoneMode,
         microphoneDeviceId = source.microphoneDeviceId,
         experimentalNvst = source.experimentalNvst,
@@ -781,7 +787,7 @@ internal fun StreamSettings.requiresNativeDesktopCloudMatchMode(): Boolean {
     val (width, height) = streamResolutionPixels(this)
     // CloudMatch's browser allocation rejects HDR even at 1080p and caps the high-resolution
     // matrix. The caller selects a platform-appropriate native identity (including Android TV).
-    return experimentalNvst || hdrEnabled || fps > 60 || width > 1920 || height > 1200
+    return forceResolution || forceHdr || experimentalNvst || hdrEnabled || fps > 60 || width > 1920 || height > 1200
 }
 
 internal data class StreamResolutionMismatch(
@@ -1056,6 +1062,7 @@ internal fun maxStreamFpsFor(subscriptionInfo: SubscriptionInfo?, fallbackMember
     if (hasUltimateStreamingPlan(subscriptionInfo, fallbackMembershipTier)) MAX_ULTIMATE_STREAM_FPS else MAX_STANDARD_STREAM_FPS
 
 internal fun StreamSettings.withFpsAllowed(subscriptionInfo: SubscriptionInfo?, fallbackMembershipTier: String?): StreamSettings {
+    if (forceResolution) return this
     val maxFps = maxStreamFpsFor(subscriptionInfo, fallbackMembershipTier)
     val allowedFps = fps.coerceIn(30, maxFps)
     return if (allowedFps == fps) this else copy(fps = allowedFps)
@@ -1135,7 +1142,7 @@ internal fun monthlyHoursRemainingFor(subscriptionInfo: SubscriptionInfo?, fallb
 internal const val ANDROID_HDR_STREAMING_ENABLED = true
 
 internal fun StreamSettings.withHdrAllowed(subscriptionInfo: SubscriptionInfo?, fallbackMembershipTier: String?): StreamSettings =
-    if (hdrEnabled && (!ANDROID_HDR_STREAMING_ENABLED || !hasHdrStreamingPlan(subscriptionInfo, fallbackMembershipTier))) {
+    if (hdrEnabled && !forceHdr && (!ANDROID_HDR_STREAMING_ENABLED || !hasHdrStreamingPlan(subscriptionInfo, fallbackMembershipTier))) {
         copy(hdrEnabled = false, hdrDisplay = null).withCodecColorCompatibility()
     } else {
         withCodecColorCompatibility()
@@ -1145,12 +1152,13 @@ internal fun StreamSettings.withHdrAllowed(subscriptionInfo: SubscriptionInfo?, 
 @Suppress("UNUSED_PARAMETER")
 internal fun StreamSettings.hdrAvailableForAndroid(androidTvProfile: Boolean): Boolean {
     if (!ANDROID_HDR_STREAMING_ENABLED) return false
+    if (forceHdr) return true
     val (width, height) = streamResolutionPixels(this)
     return codec == VideoCodec.H265 && fps <= 120 && width <= 3840 && height <= 2160
 }
 
 internal fun StreamSettings.withAndroidHdrCompatibility(androidTvProfile: Boolean): StreamSettings =
-    if (hdrEnabled && !hdrAvailableForAndroid(androidTvProfile)) {
+    if (hdrEnabled && !forceHdr && !hdrAvailableForAndroid(androidTvProfile)) {
         copy(hdrEnabled = false).withCodecColorCompatibility()
     } else {
         withCodecColorCompatibility()
@@ -1174,10 +1182,11 @@ internal fun StreamSettings.withAndroidSettingsAvailability(): StreamSettings {
 }
 
 internal fun StreamSettings.withCodecColorCompatibility(): StreamSettings {
-    val compatibleHdr = ANDROID_HDR_STREAMING_ENABLED && hdrEnabled && codec != VideoCodec.AV1
+    val isHdrActive = ANDROID_HDR_STREAMING_ENABLED && (hdrEnabled || forceHdr)
+    val compatibleHdr = isHdrActive && (codec != VideoCodec.AV1 || forceHdr)
     val compatibleHdrDisplay = hdrDisplay.takeIf { compatibleHdr }
     val compatibleColor = when {
-        codec == VideoCodec.AV1 -> ColorQuality.EightBit420
+        codec == VideoCodec.AV1 && !forceHdr -> ColorQuality.EightBit420
         compatibleHdr -> ColorQuality.EightBit420
         colorQuality.isChroma444() -> colorQuality.asChroma420()
         else -> colorQuality
@@ -1192,8 +1201,8 @@ internal fun StreamSettings.withCodecColorCompatibility(): StreamSettings {
 /** When the HDR kill switch is enabled again, HDR must use a ten-bit HEVC profile. The separate
  * color-quality selector remains available for ten-bit SDR while HDR is disabled. */
 internal fun StreamSettings.usesTenBitStreamProfile(): Boolean =
-    (ANDROID_HDR_STREAMING_ENABLED && hdrEnabled && codec == VideoCodec.H265) ||
-        ((!ANDROID_HDR_STREAMING_ENABLED || !hdrEnabled) && colorQuality.isTenBit())
+    (ANDROID_HDR_STREAMING_ENABLED && (hdrEnabled || forceHdr) && codec == VideoCodec.H265) ||
+        ((!ANDROID_HDR_STREAMING_ENABLED || (!hdrEnabled && !forceHdr)) && colorQuality.isTenBit())
 
 internal fun StreamSettings.applyingStreamPreset(preset: StreamPreset): StreamSettings {
     if (preset == StreamPreset.Custom) return this
@@ -1213,6 +1222,15 @@ internal fun StreamSettings.withoutExperimentalTransportRequests(): StreamSettin
     if (!enableL4S) this else copy(enableL4S = false)
 
 internal fun StreamSettings.withResolutionAllowed(subscriptionInfo: SubscriptionInfo?, fallbackMembershipTier: String?): StreamSettings {
+    if (forceResolution) {
+        val customResolution = customStreamResolutionOrNull(resolution)
+        if (customResolution != null) {
+            val normalizedResolution = "${customResolution.first}x${customResolution.second}"
+            return if (normalizedResolution == resolution) this else copy(resolution = normalizedResolution)
+        }
+        val normalized = normalizeStreamResolutionForAspect(resolution, aspectRatio)
+        return if (normalized == resolution) this else copy(resolution = normalized)
+    }
     val customResolution = customStreamResolutionOrNull(resolution)
     if (customResolution != null && customResolutionAllowedForPlan(customResolution, subscriptionInfo, fallbackMembershipTier)) {
         val normalizedResolution = "${customResolution.first}x${customResolution.second}"
@@ -2255,8 +2273,8 @@ internal fun StreamSettings.adjustedForDevice(report: RuntimeCodecReport?): Stre
         val lowPowerProfile = copy(
             codec = effectiveCodec,
             colorQuality = ColorQuality.EightBit420,
-            fps = minOf(fps, LOW_POWER_TV_FPS_CAP),
-            hdrEnabled = false,
+            fps = if (forceResolution) fps else minOf(fps, LOW_POWER_TV_FPS_CAP),
+            hdrEnabled = if (forceHdr) true else false,
         ).withStableAndroidCloudMatchProfile()
             .withoutAndroidTvSharpening(report)
         // A codec probe may be incomplete or conservative, especially on Android TV. It can
@@ -2264,7 +2282,7 @@ internal fun StreamSettings.adjustedForDevice(report: RuntimeCodecReport?): Stre
         // selected bitrate ceiling.
         // The server-negotiated and decoded dimensions are reported separately at runtime.
         return lowPowerProfile.copy(
-            resolution = normalizeStreamResolutionForAspect(resolution, aspectRatio),
+            resolution = if (forceResolution) resolution else normalizeStreamResolutionForAspect(resolution, aspectRatio),
         )
     }
 
@@ -2289,7 +2307,7 @@ internal fun StreamSettings.adjustedForDevice(report: RuntimeCodecReport?): Stre
     }.withStableAndroidCloudMatchProfile()
         .withoutAndroidTvSharpening(report)
     return compatible.copy(
-        resolution = normalizeStreamResolutionForAspect(compatible.resolution, compatible.aspectRatio),
+        resolution = if (forceResolution) compatible.resolution else normalizeStreamResolutionForAspect(compatible.resolution, compatible.aspectRatio),
     )
 }
 

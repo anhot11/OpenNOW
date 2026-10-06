@@ -55,4 +55,17 @@ class StreamHdrTest {
         assertFalse(hdrOutputColorSupported(6, 3)) // SDR transfer
         assertFalse(hdrOutputColorSupported(6, 7)) // HLG is not PQ
     }
+
+    @Test fun customMaxLuminanceGeneratesProportionalMasteringProfile() {
+        val custom = StreamHdr.displayProfile(context = null, customMaxLuminance = 800)
+        assertNotNull(custom)
+        assertEquals(800f, custom!!.maxLuminance)
+        assertEquals(0.005f, custom.minLuminance)
+        assertEquals(320f, custom.maxAverageLuminance)
+    }
+
+    @Test fun forceFallbackReturnsReferenceHdr10Profile() {
+        val forced = StreamHdr.displayProfile(context = null, force = true)
+        assertEquals(HdrDisplayProfile(1000f, 0.005f, 400f), forced)
+    }
 }

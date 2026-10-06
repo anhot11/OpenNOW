@@ -1055,6 +1055,43 @@ class StreamResolutionTest {
         )
     }
 
+    @Test
+    fun forceResolutionPreservesRequestedResolutionAndBypassesPlanClamping() {
+        val freeSubscription = SubscriptionInfo(membershipTier = "FREE")
+        val forced = StreamSettings(
+            resolution = "2560x1440",
+            aspectRatio = "16:9",
+            fps = 120,
+            forceResolution = true,
+        )
+
+        val allowed = forced
+            .withResolutionAllowed(freeSubscription, "FREE")
+            .withFpsAllowed(freeSubscription, "FREE")
+
+        assertEquals("2560x1440", allowed.resolution)
+        assertEquals(120, allowed.fps)
+        assertTrue(allowed.requiresNativeDesktopCloudMatchMode())
+    }
+
+    @Test
+    fun forceHdrBypassesPlanCheckAndEnablesTenBitProfile() {
+        val freeSubscription = SubscriptionInfo(membershipTier = "FREE")
+        val forced = StreamSettings(
+            codec = VideoCodec.H265,
+            hdrEnabled = true,
+            forceHdr = true,
+        )
+
+        val allowed = forced
+            .withHdrAllowed(freeSubscription, "FREE")
+            .withAndroidHdrCompatibility(androidTvProfile = false)
+
+        assertTrue(allowed.hdrEnabled)
+        assertTrue(allowed.usesTenBitStreamProfile())
+        assertTrue(allowed.requiresNativeDesktopCloudMatchMode())
+    }
+
     private fun activeSession(
         sessionId: String = "session",
         appId: Int = 100,

@@ -436,13 +436,21 @@ private data class StreamRequestProfile(
 private fun StreamSettings.requestProfile(): StreamRequestProfile {
     val compatible = withCodecColorCompatibility()
     val (width, height) = streamResolutionPixels(compatible)
-    val hdrEnabled = compatible.hdrEnabled
+    val effectiveHdr = compatible.hdrEnabled || forceHdr
+    val effectiveHdrDisplay = compatible.hdrDisplay ?: if (effectiveHdr) {
+        if (hdrMaxLuminanceNits > 0) {
+            val maxL = hdrMaxLuminanceNits.toFloat()
+            HdrDisplayProfile(maxLuminance = maxL, minLuminance = 0.005f, maxAverageLuminance = (maxL * 0.4f).coerceAtLeast(100f))
+        } else {
+            HdrDisplayProfile(1000f, 0.005f, 400f)
+        }
+    } else null
     return StreamRequestProfile(
         width = width,
         height = height,
-        hdrEnabled = hdrEnabled,
-        hdrDisplay = compatible.hdrDisplay,
-        bitDepth = if (compatible.usesTenBitStreamProfile()) 10 else 0,
+        hdrEnabled = effectiveHdr,
+        hdrDisplay = effectiveHdrDisplay,
+        bitDepth = if (effectiveHdr || compatible.usesTenBitStreamProfile()) 10 else 0,
         chroma = if (compatible.colorQuality == ColorQuality.EightBit444 || compatible.colorQuality == ColorQuality.TenBit444) 2 else 0,
     )
 }
@@ -557,12 +565,16 @@ private fun streamSessionMetadata(
         if (!settings.experimentalNvst || entry.jsonObject["key"]?.jsonPrimitive?.content != "GSStreamerType") add(entry)
     }
     val requestedResolution = profile.width to profile.height
-    val (physicalWidth, physicalHeight) = physicalDisplayResolution
-        ?.takeIf { (width, height) ->
-            width > 0 && height > 0 &&
-                width >= requestedResolution.first && height >= requestedResolution.second
-        }
-        ?: requestedResolution
+    val (physicalWidth, physicalHeight) = if (settings.forceResolution) {
+        requestedResolution
+    } else {
+        physicalDisplayResolution
+            ?.takeIf { (width, height) ->
+                width > 0 && height > 0 &&
+                    width >= requestedResolution.first && height >= requestedResolution.second
+            }
+            ?: requestedResolution
+    }
     if (physicalWidth > 0 && physicalHeight > 0) {
         add(
             metadataEntry(

@@ -851,19 +851,24 @@ private fun SettingsContent(
                         recommended = state.recommendedStreamSettings,
                     )
                 }
+                val isResolutionForced = settings.stream.forceResolution
                 val resolutionChoices = streamResolutionChoicesForAspect(settings.stream.aspectRatio).ifEmpty {
                     streamResolutionChoicesForAspect("16:9")
                 }
-                val selectedResolution = normalizeStreamResolutionForAspectAndPlan(
-                    settings.stream.resolution,
-                    settings.stream.aspectRatio,
-                    state.subscriptionInfo,
-                    fallbackMembershipTier,
-                )
+                val selectedResolution = if (isResolutionForced) {
+                    normalizeStreamResolutionForAspect(settings.stream.resolution, settings.stream.aspectRatio)
+                } else {
+                    normalizeStreamResolutionForAspectAndPlan(
+                        settings.stream.resolution,
+                        settings.stream.aspectRatio,
+                        state.subscriptionInfo,
+                        fallbackMembershipTier,
+                    )
+                }
                 ChoiceMenuRow(
                     label = stringResource(R.string.settings_resolution),
                     options = resolutionChoices.map { choice ->
-                        val available = choice.isAvailableFor(state.subscriptionInfo, fallbackMembershipTier)
+                        val available = isResolutionForced || choice.isAvailableFor(state.subscriptionInfo, fallbackMembershipTier)
                         ChoiceMenuOption(
                             value = choice.value,
                             label = choice.label,
@@ -879,7 +884,7 @@ private fun SettingsContent(
                     label = stringResource(R.string.settings_aspect_ratio),
                     options = streamAspectRatioOptions().map { aspectRatio ->
                         val choices = streamResolutionChoicesForAspect(aspectRatio)
-                        val available = choices.any { it.isAvailableFor(state.subscriptionInfo, fallbackMembershipTier) }
+                        val available = isResolutionForced || choices.any { it.isAvailableFor(state.subscriptionInfo, fallbackMembershipTier) }
                         ChoiceMenuOption(
                             value = aspectRatio,
                             label = aspectRatio,
@@ -892,12 +897,16 @@ private fun SettingsContent(
                     viewModel.updateStreamSettings { s ->
                         s.copy(
                             aspectRatio = it,
-                            resolution = normalizeStreamResolutionForAspectAndPlan(
-                                s.resolution,
-                                it,
-                                state.subscriptionInfo,
-                                fallbackMembershipTier,
-                            ),
+                            resolution = if (s.forceResolution) {
+                                normalizeStreamResolutionForAspect(s.resolution, it)
+                            } else {
+                                normalizeStreamResolutionForAspectAndPlan(
+                                    s.resolution,
+                                    it,
+                                    state.subscriptionInfo,
+                                    fallbackMembershipTier,
+                                )
+                            },
                         )
                     }
                 }
@@ -924,7 +933,18 @@ private fun SettingsContent(
                         ),
                     )
                 }
-                val maxFps = maxStreamFpsFor(state.subscriptionInfo, fallbackMembershipTier)
+                SettingSwitch(
+                    label = stringResource(R.string.settings_force_resolution),
+                    checked = settings.stream.forceResolution,
+                    description = stringResource(R.string.settings_force_resolution_desc),
+                ) { forced ->
+                    viewModel.updateStreamSettings { s -> s.copy(forceResolution = forced) }
+                }
+                val maxFps = if (settings.stream.forceResolution) {
+                    maxStreamFpsFor(state.subscriptionInfo, fallbackMembershipTier).coerceAtLeast(120)
+                } else {
+                    maxStreamFpsFor(state.subscriptionInfo, fallbackMembershipTier)
+                }
                 NumberSlider(
                     label = stringResource(R.string.settings_fps),
                     value = settings.stream.fps.coerceAtMost(maxFps).toFloat(),
@@ -1019,22 +1039,37 @@ private fun SettingsContent(
                         settingsAvailableStream.copy(codec = VideoCodec.H265, hdrEnabled = true).withHdrDeviceSupport(context).hdrEnabled
                     }
                 }
-                val hdrAvailable = hasHdrStreamingPlan(state.subscriptionInfo, fallbackMembershipTier) && hdrDeviceAvailable
+                val isHdrActive = settings.stream.hdrEnabled || settings.stream.forceHdr
                 SettingSwitch(
                     label = stringResource(R.string.settings_hdr),
-                    checked = settings.stream.hdrEnabled && hdrAvailable,
-                    enabled = hdrAvailable,
+                    checked = isHdrActive,
+                    enabled = true,
                     description = stringResource(R.string.settings_hdr_desc),
                 ) { enabled ->
                     viewModel.updateStreamSettings { s ->
                         s.copy(
                             codec = if (enabled && s.codec != VideoCodec.H265) VideoCodec.H265 else s.codec,
                             hdrEnabled = enabled,
+                            forceHdr = if (!enabled) false else s.forceHdr,
                             colorQuality = if (enabled) ColorQuality.EightBit420 else s.colorQuality,
                         ).withCodecColorCompatibility()
                     }
                 }
-                if (settingsAvailableStream.hdrEnabled) {
+                if (isHdrActive) {
+                    SettingSwitch(
+                        label = stringResource(R.string.settings_force_hdr),
+                        checked = settings.stream.forceHdr,
+                        description = stringResource(R.string.settings_force_hdr_desc),
+                    ) { force ->
+                        viewModel.updateStreamSettings { s ->
+                            s.copy(
+                                forceHdr = force,
+                                hdrEnabled = if (force) true else s.hdrEnabled,
+                                codec = if (force && s.codec != VideoCodec.H265) VideoCodec.H265 else s.codec,
+                                colorQuality = if (force) ColorQuality.EightBit420 else s.colorQuality,
+                            ).withCodecColorCompatibility()
+                        }
+                    }
                     val hdrLuminanceOptions = listOf(
                         ChoiceMenuOption("0", stringResource(R.string.settings_hdr_luminance_auto)),
                         ChoiceMenuOption("400", "400 nits"),
@@ -1068,7 +1103,7 @@ private fun SettingsContent(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (!hdrDeviceAvailable) {
+                if (!hdrDeviceAvailable && !settings.stream.forceHdr) {
                     Text(
                         if (state.androidTvProfile) {
                             stringResource(R.string.settings_hdr_android_tv_compatibility_hint)

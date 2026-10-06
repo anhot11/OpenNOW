@@ -352,7 +352,7 @@ object SdpTools {
             add("a=vqos.dfc.adjustResAndFps:0")
             add("a=vqos.calculateAvgVideoStreamingBitrate:1")
             add("a=video.dx9EnableNv12:1")
-            add("a=video.dx9EnableHdr:${if (ANDROID_HDR_STREAMING_ENABLED && settings.hdrEnabled) 1 else 0}")
+            add("a=video.dx9EnableHdr:${if (ANDROID_HDR_STREAMING_ENABLED && (settings.hdrEnabled || settings.forceHdr)) 1 else 0}")
             add("a=vqos.qpg.enable:1")
             add("a=vqos.resControl.qp.qpg.featureSetting:7")
             add("a=video.adaptiveQuantization.spatialAQSetting:7")

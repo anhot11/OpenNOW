@@ -242,8 +242,12 @@
     <string name="settings_av1_ten_bit_hint">AV1 usa color de 8 bits. Elige H.265 para 10 bits; HDR está limitado a modos compatibles de Android TV.</string>
     <string name="settings_av1_ten_bit_downgraded">AV1 usa color de 8 bits en OpenNOW. Se cambió a 8 bits y se desactivó HDR. Elige H.265 o H.264 para usar 10 bits.</string>
     <string name="settings_hdr">HDR (Performance &amp; Ultimate)</string>
-    <string name="settings_hdr_android_handheld_hint">La transmisión HDR no está disponible en dispositivos Android portátiles. SDR de 10 bits sigue disponible con H.265.</string>
+    <string name="settings_hdr_android_handheld_hint">La pantalla o el sistema no reportaron capacidades HDR10 completas. Puedes activar &apos;Forzar HDR&apos; para solicitar transmisión HDR de todas formas.</string>
     <string name="settings_hdr_android_tv_compatibility_hint">HDR en Android TV requiere H.265 a 60 FPS o menos y una resolución máxima de 3840 × 2160.</string>
+    <string name="settings_force_hdr">Forzar HDR</string>
+    <string name="settings_force_hdr_desc">Solicita siempre transmisión en HDR10 a los servidores de GFN, omitiendo las comprobaciones de compatibilidad de pantalla y plan.</string>
+    <string name="settings_force_resolution">Forzar resolución</string>
+    <string name="settings_force_resolution_desc">Evita que la resolución y los FPS se limiten por el tipo de cuenta o las características de la pantalla. Usa el perfil de escritorio nativo para evitar reducciones automáticas de GFN.</string>
     <string name="settings_region">Región</string>
     <string name="settings_session_proxy">Proxy de sesión</string>
     <string name="settings_session_proxy_hint">Enruta la creación de sesiones GFN y las consultas de cola a través de este proxy. Déjalo desactivado para solicitudes directas.</string>
@@ -559,7 +563,7 @@
     <string name="settings_bitrate_desc">La tasa máxima de datos de vídeo. Una tasa de bits mayor puede mejorar el detalle, pero solo cuando la conexión tiene suficiente capacidad estable; no aumenta los FPS.</string>
     <string name="settings_codec_desc">H.264 es el más compatible. H.265 aprovecha mejor el ancho de banda y es preferible en resoluciones altas cuando existe un decodificador por hardware verificado. AV1 es de 8 bits aquí y solo se usa en dispositivos con una ruta de hardware compatible.</string>
     <string name="settings_color_desc">8 bits 4:2:0 es el más ligero y compatible. 10 bits mejora los degradados, pero aumenta los requisitos de decodificación y ancho de banda. Android normaliza automáticamente las combinaciones no admitidas.</string>
-    <string name="settings_hdr_desc">HDR necesita una pantalla de Android TV compatible, H.265, vídeo de 10 bits y una suscripción admitida. Añade carga de procesamiento y no se recomienda para diagnosticar retardo.</string>
+    <string name="settings_hdr_desc">HDR10 requiere una pantalla compatible y decodificador por hardware H.265, hasta 4K a 60 FPS o más según tu plan. El vídeo usa el procesamiento HDR de la pantalla.</string>
     <string name="settings_local_apps">Añadir mis propias apps</string>
     <string name="settings_local_apps_desc">Muestra una estantería en la Biblioteca donde puedes añadir, abrir y quitar apps y juegos de Android instalados.</string>
     <string name="settings_default_launcher">Convertir en tu lanzador predeterminado</string>

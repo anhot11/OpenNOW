@@ -20,23 +20,27 @@ internal fun hdrDisplayProfile(max: Float, min: Float, average: Float): HdrDispl
 
 internal object StreamHdr {
     @Suppress("DEPRECATION")
-    fun displayProfile(context: Context, customMaxLuminance: Int = 0): HdrDisplayProfile? {
-        if (Build.VERSION.SDK_INT < 26) return null
-        val display = (if (Build.VERSION.SDK_INT >= 30) runCatching { context.display }.getOrNull() else null)
-            ?: (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
-        val capabilities = display?.hdrCapabilities ?: return null
-        if (Display.HdrCapabilities.HDR_TYPE_HDR10 !in capabilities.supportedHdrTypes) return null
+    fun displayProfile(context: Context?, customMaxLuminance: Int = 0, force: Boolean = false): HdrDisplayProfile? {
         if (customMaxLuminance > 0) {
             val maxL = customMaxLuminance.toFloat()
             val minL = 0.005f
             val avgL = (maxL * 0.4f).coerceAtLeast(100f)
             return HdrDisplayProfile(maxLuminance = maxL, minLuminance = minL, maxAverageLuminance = avgL)
         }
-        val profile = hdrDisplayProfile(
-            capabilities.desiredMaxLuminance,
-            capabilities.desiredMinLuminance,
-            capabilities.desiredMaxAverageLuminance,
-        )
+        if (context == null) return if (force) HdrDisplayProfile(1000f, 0.005f, 400f) else null
+        if (Build.VERSION.SDK_INT < 26) return if (force) HdrDisplayProfile(1000f, 0.005f, 400f) else null
+        val display = (if (Build.VERSION.SDK_INT >= 30) runCatching { context.display }.getOrNull() else null)
+            ?: (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
+        val capabilities = display?.hdrCapabilities
+        val hasHdr10 = capabilities != null && Display.HdrCapabilities.HDR_TYPE_HDR10 in capabilities.supportedHdrTypes
+        if (!hasHdr10 && !force) return null
+        val profile = capabilities?.let {
+            hdrDisplayProfile(
+                it.desiredMaxLuminance,
+                it.desiredMinLuminance,
+                it.desiredMaxAverageLuminance,
+            )
+        }
         if (profile != null) return profile
         // Many Android devices have HDR10 OLED displays and hardware decoders, but their vendor
         // display HAL returns -1.0 for desiredMaxLuminance instead of reading panel EDID.
@@ -82,15 +86,16 @@ private val hdrHevcProfiles = setOf(
 )
 
 internal fun StreamSettings.withHdrDeviceSupport(context: Context): StreamSettings {
-    if (!hdrEnabled) return this
+    if (!hdrEnabled && !forceHdr) return this
     if (!ANDROID_HDR_STREAMING_ENABLED) {
         return copy(hdrEnabled = false, hdrDisplay = null).withCodecColorCompatibility()
     }
-    val display = StreamHdr.displayProfile(context, hdrMaxLuminanceNits)
+    val display = StreamHdr.displayProfile(context, hdrMaxLuminanceNits, force = forceHdr)
     val (width, height) = streamResolutionPixels(this)
-    val supported = hdrAvailableForAndroid(isAndroidTvProfile(context)) && display != null &&
-        StreamHdr.decoderName(width, height, fps) != null
-    return copy(hdrEnabled = supported, hdrDisplay = if (supported) display else null)
+    val supported = forceHdr || (hdrAvailableForAndroid(isAndroidTvProfile(context)) && display != null &&
+        StreamHdr.decoderName(width, height, fps) != null)
+    val effectiveDisplay = display ?: if (forceHdr) HdrDisplayProfile(1000f, 0.005f, 400f) else null
+    return copy(hdrEnabled = supported, hdrDisplay = if (supported) effectiveDisplay else null)
 }
 
 /** Missing keys retain the configured PQ/BT.2020 values; explicit SDR output is rejected. */
