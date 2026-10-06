@@ -901,15 +901,27 @@ private fun SettingsContent(
                         )
                     }
                 }
-                SettingSwitch(
-                    label = stringResource(R.string.settings_stretch_stream_to_fit),
-                    checked = settings.stretchStreamToFit,
+                ChoiceMenuRow(
+                    label = stringResource(R.string.settings_display_scaling_mode),
+                    options = listOf(
+                        ChoiceMenuOption(StreamDisplayScalingMode.Fit.name, stringResource(R.string.display_scaling_fit)),
+                        ChoiceMenuOption(StreamDisplayScalingMode.Stretch.name, stringResource(R.string.display_scaling_stretch)),
+                        ChoiceMenuOption(StreamDisplayScalingMode.Zoom.name, stringResource(R.string.display_scaling_zoom)),
+                    ),
+                    selected = settings.effectiveDisplayScalingMode.name,
+                    selectedLabel = when (settings.effectiveDisplayScalingMode) {
+                        StreamDisplayScalingMode.Fit -> stringResource(R.string.display_scaling_fit)
+                        StreamDisplayScalingMode.Stretch -> stringResource(R.string.display_scaling_stretch)
+                        StreamDisplayScalingMode.Zoom -> stringResource(R.string.display_scaling_zoom)
+                    },
                     description = stringResource(R.string.settings_stretch_stream_to_fit_desc),
-                ) { enabled ->
+                ) { value ->
+                    val mode = StreamDisplayScalingMode.valueOf(value)
                     viewModel.updateSettings(
                         settings.copy(
                             legacyCropStreamToFill = false,
-                            stretchStreamToFit = enabled,
+                            stretchStreamToFit = mode == StreamDisplayScalingMode.Stretch,
+                            displayScalingMode = mode,
                         ),
                     )
                 }
@@ -1024,6 +1036,34 @@ private fun SettingsContent(
                     }
                 }
                 if (settingsAvailableStream.hdrEnabled) {
+                    val hdrLuminanceOptions = listOf(
+                        ChoiceMenuOption("0", stringResource(R.string.settings_hdr_luminance_auto)),
+                        ChoiceMenuOption("400", "400 nits"),
+                        ChoiceMenuOption("600", "600 nits"),
+                        ChoiceMenuOption("800", "800 nits"),
+                        ChoiceMenuOption("1000", "1000 nits"),
+                        ChoiceMenuOption("1500", "1500 nits"),
+                    )
+                    ChoiceMenuRow(
+                        label = stringResource(R.string.settings_hdr_max_luminance),
+                        options = hdrLuminanceOptions,
+                        selected = settings.stream.hdrMaxLuminanceNits.toString(),
+                        selectedLabel = if (settings.stream.hdrMaxLuminanceNits == 0) {
+                            stringResource(R.string.settings_hdr_luminance_auto)
+                        } else {
+                            "${settings.stream.hdrMaxLuminanceNits} nits"
+                        },
+                    ) { nitsStr ->
+                        val nits = nitsStr.toIntOrNull() ?: 0
+                        viewModel.updateStreamSettings { s -> s.copy(hdrMaxLuminanceNits = nits) }
+                    }
+                    SettingSwitch(
+                        label = stringResource(R.string.settings_true_hdr),
+                        checked = settings.stream.trueHdrEnabled,
+                        description = stringResource(R.string.settings_true_hdr_desc),
+                    ) { trueHdr ->
+                        viewModel.updateStreamSettings { s -> s.copy(trueHdrEnabled = trueHdr) }
+                    }
                     Text(
                         stringResource(R.string.settings_hdr_ten_bit_warning),
                         color = Color(0xffffb74d),

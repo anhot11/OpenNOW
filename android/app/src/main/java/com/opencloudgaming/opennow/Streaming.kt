@@ -881,11 +881,17 @@ class NativeStreamClient(
         vibrationEnabled: Boolean,
         hapticsOutput: HapticsOutputPreference,
         stretchToFit: Boolean,
+        displayScalingMode: StreamDisplayScalingMode = if (stretchToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
     ) {
         updateRendererSettings(rendererSettings)
         updateHapticsSettings(vibrationEnabled, hapticsOutput)
-        NativeStreamInputRouter.setStretchToFit(stretchToFit)
-        renderer?.stretchToFit = stretchToFit
+        val mode = if (stretchToFit && displayScalingMode == StreamDisplayScalingMode.Fit) {
+            StreamDisplayScalingMode.Stretch
+        } else {
+            displayScalingMode
+        }
+        NativeStreamInputRouter.setDisplayScalingMode(mode)
+        renderer?.scalingMode = mode
     }
 
     fun updateControllerMouseAssistAutoArm(enabled: Boolean) {

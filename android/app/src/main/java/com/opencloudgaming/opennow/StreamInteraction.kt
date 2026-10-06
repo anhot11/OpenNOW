@@ -692,6 +692,7 @@ internal fun buildTouchBatch(
     streamWidth: Int,
     streamHeight: Int,
     stretchToFit: Boolean,
+    displayScalingMode: StreamDisplayScalingMode = if (stretchToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
     renderingAspectRatio: Float,
     presentationZoomScale: Float = 1f,
     presentationTranslationX: Float = 0f,
@@ -716,6 +717,7 @@ internal fun buildTouchBatch(
             streamWidth = streamWidth,
             streamHeight = streamHeight,
             stretchToFit = stretchToFit,
+            displayScalingMode = displayScalingMode,
             renderingAspectRatio = renderingAspectRatio,
             presentationZoomScale = presentationZoomScale,
             presentationTranslationX = presentationTranslationX,
@@ -774,7 +776,8 @@ internal fun streamPointForTouch(
     viewHeight: Int,
     streamWidth: Int,
     streamHeight: Int,
-    stretchToFit: Boolean,
+    stretchToFit: Boolean = false,
+    displayScalingMode: StreamDisplayScalingMode = if (stretchToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
     renderingAspectRatio: Float,
     presentationZoomScale: Float = 1f,
     presentationTranslationX: Float = 0f,
@@ -809,23 +812,50 @@ internal fun streamPointForTouch(
     var offsetX = 0f
     var offsetY = 0f
 
-    // A stretched surface occupies the complete view. Aspect-ratio bars only exist in fit mode.
-    if (!stretchToFit) {
-        val streamAspectRatio =
-            if (renderingAspectRatio.isFinite() && renderingAspectRatio > 0f) {
-                renderingAspectRatio
-            } else {
-                viewAspectOf(streamWidth, streamHeight)
+    val effectiveMode = if (stretchToFit && displayScalingMode == StreamDisplayScalingMode.Fit) {
+        StreamDisplayScalingMode.Stretch
+    } else {
+        displayScalingMode
+    }
+
+    val streamAspectRatio =
+        if (renderingAspectRatio.isFinite() && renderingAspectRatio > 0f) {
+            renderingAspectRatio
+        } else {
+            viewAspectOf(streamWidth, streamHeight)
+        }
+    val viewAspectRatio = viewAspectOf(viewWidth, viewHeight)
+
+    when (effectiveMode) {
+        StreamDisplayScalingMode.Fit -> {
+            if (viewAspectRatio > streamAspectRatio) {
+                // Pillarboxed — bars left and right.
+                videoWidth = viewHeight * streamAspectRatio
+                offsetX = (viewWidth - videoWidth) / 2f
+            } else if (viewAspectRatio < streamAspectRatio) {
+                // Letterboxed — bars top and bottom.
+                videoHeight = viewWidth / streamAspectRatio
+                offsetY = (viewHeight - videoHeight) / 2f
             }
-        val viewAspectRatio = viewAspectOf(viewWidth, viewHeight)
-        if (viewAspectRatio > streamAspectRatio) {
-            // Pillarboxed — bars left and right.
-            videoWidth = viewHeight * streamAspectRatio
-            offsetX = (viewWidth - videoWidth) / 2f
-        } else if (viewAspectRatio < streamAspectRatio) {
-            // Letterboxed — bars top and bottom.
-            videoHeight = viewWidth / streamAspectRatio
-            offsetY = (viewHeight - videoHeight) / 2f
+        }
+        StreamDisplayScalingMode.Stretch -> {
+            videoWidth = viewWidth.toFloat()
+            videoHeight = viewHeight.toFloat()
+            offsetX = 0f
+            offsetY = 0f
+        }
+        StreamDisplayScalingMode.Zoom -> {
+            if (viewAspectRatio > streamAspectRatio) {
+                videoWidth = viewWidth.toFloat()
+                videoHeight = viewWidth / streamAspectRatio
+                offsetX = 0f
+                offsetY = (viewHeight - videoHeight) / 2f
+            } else if (viewAspectRatio < streamAspectRatio) {
+                videoHeight = viewHeight.toFloat()
+                videoWidth = viewHeight * streamAspectRatio
+                offsetX = (viewWidth - videoWidth) / 2f
+                offsetY = 0f
+            }
         }
     }
 
@@ -1023,6 +1053,7 @@ internal class TouchMouseState {
         width: Int = 0,
         height: Int = 0,
         stretchToFit: Boolean = false,
+        displayScalingMode: StreamDisplayScalingMode = if (stretchToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
         renderingAspectRatio: Float = 0f,
         presentationZoomScale: Float = 1f,
         presentationTranslationX: Float = 0f,
@@ -1067,6 +1098,7 @@ internal class TouchMouseState {
                             streamWidth = streamWidth,
                             streamHeight = streamHeight,
                             stretchToFit = stretchToFit,
+                            displayScalingMode = displayScalingMode,
                             renderingAspectRatio = renderingAspectRatio,
                             presentationZoomScale = presentationZoomScale,
                             presentationTranslationX = presentationTranslationX,
@@ -1102,6 +1134,7 @@ internal class TouchMouseState {
                                         streamWidth = streamWidth,
                                         streamHeight = streamHeight,
                                         stretchToFit = stretchToFit,
+                                        displayScalingMode = displayScalingMode,
                                         renderingAspectRatio = renderingAspectRatio,
                                         presentationZoomScale = presentationZoomScale,
                                         presentationTranslationX = presentationTranslationX,

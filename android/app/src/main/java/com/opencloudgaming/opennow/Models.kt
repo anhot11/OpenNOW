@@ -201,6 +201,8 @@ data class StreamSettings(
     val colorQuality: ColorQuality = ColorQuality.TenBit420,
     val hdrEnabled: Boolean = false,
     @kotlinx.serialization.Transient val hdrDisplay: HdrDisplayProfile? = null,
+    val hdrMaxLuminanceNits: Int = 0,
+    val trueHdrEnabled: Boolean = true,
     val region: String = "",
     val keyboardLayout: String = "en-US",
     val gameLanguage: String = "en_US",
@@ -575,6 +577,13 @@ internal const val CATALOG_SORT_DEFAULT_VERSION = 1
 internal const val GAME_BORDERS_DEFAULT_VERSION = 1
 
 @Serializable
+enum class StreamDisplayScalingMode(val label: String) {
+    Fit("Fit"),
+    Stretch("Stretch"),
+    Zoom("Zoom"),
+}
+
+@Serializable
 data class AppSettings(
     val stream: StreamSettings = StreamSettings(),
     /** Persisted SAF tree URI used for subsequent stream recordings. */
@@ -691,6 +700,8 @@ data class AppSettings(
      */
     @SerialName("stretchStreamToZoom")
     val stretchStreamToFit: Boolean = false,
+    @SerialName("displayScalingMode")
+    val displayScalingMode: StreamDisplayScalingMode = if (stretchStreamToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
     val streamPresentationProfileVersion: Int = 0,
     val favoriteGameIds: List<String> = emptyList(),
     val defaultGameVariantIds: Map<String, String> = emptyMap(),
@@ -727,7 +738,14 @@ data class AppSettings(
      * `AndroidDeveloperOptions.kt`.
      */
     val developerOptionsUnlocked: Boolean = false,
-)
+) {
+    val effectiveDisplayScalingMode: StreamDisplayScalingMode
+        get() = if (stretchStreamToFit && displayScalingMode == StreamDisplayScalingMode.Fit) {
+            StreamDisplayScalingMode.Stretch
+        } else {
+            displayScalingMode
+        }
+}
 
 internal const val MIN_GAME_CARD_SCALE = 0.75f
 internal const val MAX_GAME_CARD_SCALE = 1.4f
@@ -756,8 +774,13 @@ internal fun streamResolutionPixels(settings: StreamSettings): Pair<Int, Int> {
     return parseResolutionPixels(normalizeStreamResolutionForAspect(settings.resolution, settings.aspectRatio))
 }
 
-internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean =
-    streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION)
+internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean {
+    if (requiresNativeDesktopCloudMatchMode()) return false
+    val (width, _) = streamResolutionPixels(this)
+    return streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION) ||
+        aspectRatio in setOf("18:9", "19.5:9", "20:9") ||
+        (aspectRatio == "21:9" && width <= 1680)
+}
 
 internal fun StreamSettings.requiresNativeDesktopCloudMatchMode(): Boolean {
     val (width, height) = streamResolutionPixels(this)
@@ -1265,15 +1288,18 @@ internal val STREAM_RESOLUTION_OPTIONS = listOf(
     StreamResolutionOption("1600x1200", "4:3", "1080"),
     StreamResolutionOption("1280x1024", "5:4", "1050"),
     StreamResolutionOption(PORTAL_STREAM_RESOLUTION, "19.5:9", "720"),
+    StreamResolutionOption("1440x720", "18:9", "720"),
     StreamResolutionOption("1600x720", "20:9", "720"),
     StreamResolutionOption("1376x590", "21:9", "720"),
     StreamResolutionOption("1680x720", "21:9", "720"),
-    StreamResolutionOption("2340x1080", "19.5:9", "1080", StreamResolutionPlan.Priority),
+    StreamResolutionOption("2160x1080", "18:9", "1080"),
+    StreamResolutionOption("2340x1080", "19.5:9", "1080"),
     StreamResolutionOption("2400x1080", "20:9", "1080"),
     StreamResolutionOption("2560x1080", "21:9", "1080", StreamResolutionPlan.Priority),
     StreamResolutionOption("3840x1080", "32:9", "1080", StreamResolutionPlan.Priority),
     StreamResolutionOption("2560x1440", "16:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("2560x1600", "16:10", "1440", StreamResolutionPlan.Priority),
+    StreamResolutionOption("2880x1440", "18:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("3200x1440", "20:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("3440x1440", "21:9", "1440", StreamResolutionPlan.Priority),
     StreamResolutionOption("5120x1440", "32:9", "1440", StreamResolutionPlan.Priority),
@@ -1286,13 +1312,13 @@ internal val STREAM_RESOLUTION_OPTIONS = listOf(
 )
 
 private val PREFERRED_RESOLUTION_BY_TIER_AND_ASPECT = mapOf(
-    "720" to mapOf("16:9" to "1280x720", "16:10" to "1280x800", "4:3" to "1024x768", "19.5:9" to PORTAL_STREAM_RESOLUTION, "20:9" to "1600x720", "21:9" to "1680x720"),
+    "720" to mapOf("16:9" to "1280x720", "16:10" to "1280x800", "4:3" to "1024x768", "18:9" to "1440x720", "19.5:9" to PORTAL_STREAM_RESOLUTION, "20:9" to "1600x720", "21:9" to "1680x720"),
     "768" to mapOf("16:9" to "1366x768", "4:3" to "1024x768"),
     "834" to mapOf("4:3" to "1112x834"),
     "900" to mapOf("16:9" to "1600x900", "16:10" to "1440x900"),
     "1050" to mapOf("16:10" to "1680x1050", "5:4" to "1280x1024"),
-    "1080" to mapOf("16:9" to "1920x1080", "16:10" to "1920x1200", "4:3" to "1600x1200", "19.5:9" to "2340x1080", "20:9" to "2400x1080", "21:9" to "2560x1080", "32:9" to "3840x1080"),
-    "1440" to mapOf("16:9" to "2560x1440", "16:10" to "2560x1600", "20:9" to "3200x1440", "21:9" to "3440x1440", "24:10" to "3840x1600", "32:9" to "5120x1440"),
+    "1080" to mapOf("16:9" to "1920x1080", "16:10" to "1920x1200", "4:3" to "1600x1200", "18:9" to "2160x1080", "19.5:9" to "2340x1080", "20:9" to "2400x1080", "21:9" to "2560x1080", "32:9" to "3840x1080"),
+    "1440" to mapOf("16:9" to "2560x1440", "16:10" to "2560x1600", "18:9" to "2880x1440", "20:9" to "3200x1440", "21:9" to "3440x1440", "24:10" to "3840x1600", "32:9" to "5120x1440"),
     "2160" to mapOf("16:9" to "3840x2160", "16:10" to "3456x2160", "20:9" to "4800x2160", "21:9" to "5120x2160"),
     "2880" to mapOf("16:9" to "5120x2880"),
 )
@@ -1410,7 +1436,9 @@ private fun planForMembershipTier(membershipTier: String?): StreamResolutionPlan
     val normalized = normalizeMembershipTier(membershipTier)
     return when {
         normalized.contains("ULTIMATE") || normalized.contains("RTX3080") -> StreamResolutionPlan.Ultimate
-        normalized.contains("PRIORITY") || normalized.contains("PERFORMANCE") || normalized.contains("FOUNDERS") -> StreamResolutionPlan.Priority
+        normalized.contains("PRIORITY") || normalized.contains("PERFORMANCE") || normalized.contains("FOUNDERS") ||
+            normalized.contains("PREMIUM") || normalized.contains("PRO") || normalized.contains("VIP") ||
+            normalized.contains("PLUS") || normalized.contains("ADVANCED") || normalized.contains("DAYPASS") -> StreamResolutionPlan.Priority
         else -> StreamResolutionPlan.Free
     }
 }

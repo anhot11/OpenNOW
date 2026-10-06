@@ -735,6 +735,16 @@
     <string name="action_mute_music">Mute music</string>
     <string name="settings_stretch_stream_to_fit">Stretch stream to fill</string>
     <string name="settings_stretch_stream_to_fit_desc">Off by default to preserve exact geometry. Turn this on to fill the display by stretching the picture on the mismatched axis only — never by cropping it.</string>
+    <string name="settings_display_scaling_mode">Display scaling mode</string>
+    <string name="settings_display_scaling_mode_desc">Choose how the stream fills your screen: Fit (original aspect with bars), Stretch (full screen by stretching), or Zoom (full screen without distortion by cropping slight edges).</string>
+    <string name="display_scaling_fit">Fit (Original)</string>
+    <string name="display_scaling_stretch">Stretch (Full)</string>
+    <string name="display_scaling_zoom">Zoom (Crop)</string>
+    <string name="settings_hdr_max_luminance">HDR peak brightness</string>
+    <string name="settings_hdr_max_luminance_desc">Target peak luminance for display tone mapping. Auto reads your screen\'s reported mastering metadata.</string>
+    <string name="settings_hdr_luminance_auto">Auto (Default)</string>
+    <string name="settings_true_hdr">NVIDIA TrueHDR</string>
+    <string name="settings_true_hdr_desc">Uses server-side AI filter to reconstruct HDR range in games that only support SDR.</string>
     <string name="settings_stream_sharpening_desc">Applies an extra GPU filter after decoding. It can improve perceived detail but may add rendering load on slower devices.</string>
     <string name="settings_stream_sharpening_amount_desc">Controls the strength of the post-processing sharpening filter. It does not change the source stream resolution.</string>
     <string name="settings_session_counter">Smart session timer</string>

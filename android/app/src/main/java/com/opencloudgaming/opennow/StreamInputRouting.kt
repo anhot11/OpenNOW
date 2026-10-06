@@ -244,6 +244,8 @@ object NativeStreamInputRouter {
     @Volatile
     private var stretchToFit = false
     @Volatile
+    private var displayScalingMode = StreamDisplayScalingMode.Fit
+    @Volatile
     private var renderingAspectRatio = 0f
     @Volatile
     private var presentationTransform = PresentationTransform()
@@ -338,8 +340,13 @@ object NativeStreamInputRouter {
     }
 
     fun setStretchToFit(enabled: Boolean) {
-        if (stretchToFit != enabled) {
-            stretchToFit = enabled
+        setDisplayScalingMode(if (enabled) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit)
+    }
+
+    fun setDisplayScalingMode(mode: StreamDisplayScalingMode) {
+        if (displayScalingMode != mode) {
+            displayScalingMode = mode
+            stretchToFit = mode == StreamDisplayScalingMode.Stretch
             touchMouseState.reset(client)
         }
     }
@@ -577,6 +584,7 @@ object NativeStreamInputRouter {
             width = width,
             height = height,
             stretchToFit = stretchToFit,
+            displayScalingMode = displayScalingMode,
             renderingAspectRatio = inputContentAspectRatio(decodedResolution),
             presentationZoomScale = transform.zoomScale,
             presentationTranslationX = transform.translationX,
@@ -649,6 +657,7 @@ object NativeStreamInputRouter {
                 streamWidth = streamWidth,
                 streamHeight = streamHeight,
                 stretchToFit = stretchToFit,
+                displayScalingMode = displayScalingMode,
                 renderingAspectRatio = inputContentAspectRatio(decodedResolution),
                 presentationZoomScale = transform.zoomScale,
                 presentationTranslationX = transform.translationX,

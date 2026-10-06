@@ -221,4 +221,33 @@ class StreamPointForTouchTest {
 
         assertEquals(normal, invalid)
     }
+
+    @Test
+    fun zoomModeCropsUniformlyWithoutDistortion() {
+        val centre = streamPointForTouch(
+            touchX = 720f,
+            touchY = 360f,
+            viewWidth = 1440,
+            viewHeight = 720,
+            streamWidth = 1920,
+            streamHeight = 1080,
+            displayScalingMode = StreamDisplayScalingMode.Zoom,
+            renderingAspectRatio = 16f / 9f,
+        )
+        assertEquals(960f, centre.x, 0.01f)
+        assertEquals(540f, centre.y, 0.01f)
+
+        val left = streamPointForTouch(
+            touchX = 0f,
+            touchY = 360f,
+            viewWidth = 1440,
+            viewHeight = 720,
+            streamWidth = 1920,
+            streamHeight = 1080,
+            displayScalingMode = StreamDisplayScalingMode.Zoom,
+            renderingAspectRatio = 16f / 9f,
+        )
+        assertEquals(0f, left.x, 0.01f)
+        assertEquals(540f, left.y, 0.01f)
+    }
 }

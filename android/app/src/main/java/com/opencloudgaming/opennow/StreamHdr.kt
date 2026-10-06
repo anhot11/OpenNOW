@@ -20,12 +20,18 @@ internal fun hdrDisplayProfile(max: Float, min: Float, average: Float): HdrDispl
 
 internal object StreamHdr {
     @Suppress("DEPRECATION")
-    fun displayProfile(context: Context): HdrDisplayProfile? {
+    fun displayProfile(context: Context, customMaxLuminance: Int = 0): HdrDisplayProfile? {
         if (Build.VERSION.SDK_INT < 26) return null
         val display = (if (Build.VERSION.SDK_INT >= 30) runCatching { context.display }.getOrNull() else null)
             ?: (context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager)?.defaultDisplay
         val capabilities = display?.hdrCapabilities ?: return null
         if (Display.HdrCapabilities.HDR_TYPE_HDR10 !in capabilities.supportedHdrTypes) return null
+        if (customMaxLuminance > 0) {
+            val maxL = customMaxLuminance.toFloat()
+            val minL = 0.005f
+            val avgL = (maxL * 0.4f).coerceAtLeast(100f)
+            return HdrDisplayProfile(maxLuminance = maxL, minLuminance = minL, maxAverageLuminance = avgL)
+        }
         val profile = hdrDisplayProfile(
             capabilities.desiredMaxLuminance,
             capabilities.desiredMinLuminance,
@@ -80,7 +86,7 @@ internal fun StreamSettings.withHdrDeviceSupport(context: Context): StreamSettin
     if (!ANDROID_HDR_STREAMING_ENABLED) {
         return copy(hdrEnabled = false, hdrDisplay = null).withCodecColorCompatibility()
     }
-    val display = StreamHdr.displayProfile(context)
+    val display = StreamHdr.displayProfile(context, hdrMaxLuminanceNits)
     val (width, height) = streamResolutionPixels(this)
     val supported = hdrAvailableForAndroid(isAndroidTvProfile(context)) && display != null &&
         StreamHdr.decoderName(width, height, fps) != null

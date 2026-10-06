@@ -219,6 +219,7 @@ internal fun StreamScreen(
     val smartSessionLimit = smartSessionLimitFor(state.subscriptionInfo, state.authSession?.user?.membershipTier)
     val buttonToneEnabled = state.settings.controllerUiSounds
     val stretchToFit = state.settings.stretchStreamToFit
+    val displayScalingMode = state.settings.effectiveDisplayScalingMode
     val playButtonTone = {
         audioController.playButtonTone(buttonToneEnabled)
     }
@@ -817,6 +818,7 @@ internal fun StreamScreen(
                 externalMouseRoot = activity?.window?.decorView,
                 onMouseCaptureInput = { (activity as? MainActivity)?.enforceStreamSystemUiFromInput() },
                 stretchToFit = stretchToFit,
+                displayScalingMode = displayScalingMode,
                 vibrationEnabled = state.settings.vibrationEnabled,
                 hapticsOutput = state.settings.hapticsOutput,
             )
@@ -1422,11 +1424,16 @@ internal fun StreamScreen(
                         }
                     },
                     onStretchToFitToggle = {
-                        val next = !state.settings.stretchStreamToFit
+                        val nextMode = when (state.settings.effectiveDisplayScalingMode) {
+                            StreamDisplayScalingMode.Fit -> StreamDisplayScalingMode.Stretch
+                            StreamDisplayScalingMode.Stretch -> StreamDisplayScalingMode.Zoom
+                            StreamDisplayScalingMode.Zoom -> StreamDisplayScalingMode.Fit
+                        }
                         viewModel.updateSettings(
                             state.settings.copy(
                                 legacyCropStreamToFill = false,
-                                stretchStreamToFit = next,
+                                stretchStreamToFit = nextMode == StreamDisplayScalingMode.Stretch,
+                                displayScalingMode = nextMode,
                             ),
                         )
                     },
@@ -1703,6 +1710,7 @@ private fun StreamVideoSurface(
     externalMouseRoot: android.view.View?,
     onMouseCaptureInput: () -> Unit,
     stretchToFit: Boolean,
+    displayScalingMode: StreamDisplayScalingMode = if (stretchToFit) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
     vibrationEnabled: Boolean,
     hapticsOutput: HapticsOutputPreference,
     modifier: Modifier = Modifier,
@@ -1741,27 +1749,27 @@ private fun StreamVideoSurface(
             0f
         }
     }
-    val rendererModifier = if (viewportAspectRatio <= 0f || stretchToFit) {
+    val isFilledDisplay = displayScalingMode != StreamDisplayScalingMode.Fit
+    val rendererModifier = if (viewportAspectRatio <= 0f || isFilledDisplay) {
         Modifier.fillMaxSize()
     } else if (viewportAspectRatio > streamAspectRatio) {
         // Screen is wider than stream (e.g. 2400×1080 screen, 1920×1080 stream).
         // Fit by height so the renderer has no black bars internally; horizontal
-        // stretch (if enabled) is applied later via View.scaleX.
+        // stretch or zoom is applied later via View.scaleX / scaleY.
         Modifier
             .fillMaxHeight()
             .aspectRatio(streamAspectRatio)
     } else {
-        // Screen is taller than stream — fit by width; vertical stretch via scaleY.
+        // Screen is taller than stream — fit by width; vertical stretch or zoom via scaleY / scaleX.
         Modifier
             .fillMaxWidth()
             .aspectRatio(streamAspectRatio)
     }
 
-    // SCALE_ASPECT_FIT preserves every decoded pixel. Stretching the View on only
-    // the mismatching axis removes the bars without cropping HUD or edge content.
-    val stretchScale = remember(stretchToFit, viewportAspectRatio, stretchContentAspectRatio) {
-        streamStretchScale(
-            enabled = stretchToFit,
+    // Presentation scaling adjusts the native surface according to the chosen mode (Fit, Stretch, or Zoom).
+    val presentationScale = remember(displayScalingMode, viewportAspectRatio, stretchContentAspectRatio) {
+        streamPresentationScale(
+            scalingMode = displayScalingMode,
             viewportAspectRatio = viewportAspectRatio,
             streamAspectRatio = stretchContentAspectRatio,
         )
@@ -1773,6 +1781,7 @@ private fun StreamVideoSurface(
         touchMouseEnabled,
         pinchZoomEnabled,
         stretchToFit,
+        displayScalingMode,
         streamAspectRatio,
         configuration.orientation,
         configuration.screenWidthDp,
@@ -1781,8 +1790,8 @@ private fun StreamVideoSurface(
         zoomScale = 1f
         zoomOffset = Offset.Zero
     }
-    LaunchedEffect(stretchToFit) {
-        NativeStreamInputRouter.setStretchToFit(stretchToFit)
+    LaunchedEffect(displayScalingMode) {
+        NativeStreamInputRouter.setDisplayScalingMode(displayScalingMode)
     }
     LaunchedEffect(zoomScale, zoomOffset) {
         NativeStreamInputRouter.setPresentationTransform(
@@ -1798,10 +1807,11 @@ private fun StreamVideoSurface(
         settings.streamSharpeningEnabled,
         settings.streamSharpeningAmount,
         stretchToFit,
+        displayScalingMode,
         vibrationEnabled,
         hapticsOutput,
     ) {
-        client.applyLiveSettings(settings, vibrationEnabled, hapticsOutput, stretchToFit)
+        client.applyLiveSettings(settings, vibrationEnabled, hapticsOutput, stretchToFit, displayScalingMode)
     }
     LaunchedEffect(streamAspectRatio) {
         NativeStreamInputRouter.setRenderingAspectRatio(streamAspectRatio)
@@ -1862,14 +1872,14 @@ private fun StreamVideoSurface(
                         isFocusable = false
                         isFocusableInTouchMode = false
                         hideAndroidPointerTree()
-                        this.stretchToFit = stretchToFit
-                        setPresentationScale(stretchScale.first, stretchScale.second)
+                        this.scalingMode = displayScalingMode
+                        setPresentationScale(presentationScale.first, presentationScale.second)
                     }
                 },
                 update = { renderer ->
-                    client.applyLiveSettings(settings, vibrationEnabled, hapticsOutput, stretchToFit)
-                    renderer.stretchToFit = stretchToFit
-                    renderer.setPresentationScale(stretchScale.first, stretchScale.second)
+                    client.applyLiveSettings(settings, vibrationEnabled, hapticsOutput, stretchToFit, displayScalingMode)
+                    renderer.scalingMode = displayScalingMode
+                    renderer.setPresentationScale(presentationScale.first, presentationScale.second)
                     renderer.isFocusable = false
                     renderer.isFocusableInTouchMode = false
                     pointerRootView.configureAndroidMousePointerCapture(hideExternalMousePointer, { currentOnMouseCaptureInput() }) { event ->
@@ -1946,20 +1956,45 @@ internal fun streamStretchContentAspectRatio(
     return decodedAspectRatio.takeIf { it.isFinite() && it > 0f } ?: selectedAspectRatio
 }
 
+internal fun streamPresentationScale(
+    scalingMode: StreamDisplayScalingMode,
+    viewportAspectRatio: Float,
+    streamAspectRatio: Float,
+): Pair<Float, Float> {
+    if (viewportAspectRatio <= 0f || streamAspectRatio <= 0f) return 1f to 1f
+    return when (scalingMode) {
+        StreamDisplayScalingMode.Fit -> 1f to 1f
+        StreamDisplayScalingMode.Stretch -> {
+            when {
+                viewportAspectRatio > streamAspectRatio ->
+                    (viewportAspectRatio / streamAspectRatio).coerceIn(1f, 3f) to 1f
+                viewportAspectRatio < streamAspectRatio ->
+                    1f to (streamAspectRatio / viewportAspectRatio).coerceIn(1f, 3f)
+                else -> 1f to 1f
+            }
+        }
+        StreamDisplayScalingMode.Zoom -> {
+            val zoomFactor = when {
+                viewportAspectRatio > streamAspectRatio ->
+                    (viewportAspectRatio / streamAspectRatio).coerceIn(1f, 3f)
+                viewportAspectRatio < streamAspectRatio ->
+                    (streamAspectRatio / viewportAspectRatio).coerceIn(1f, 3f)
+                else -> 1f
+            }
+            zoomFactor to zoomFactor
+        }
+    }
+}
+
 internal fun streamStretchScale(
     enabled: Boolean,
     viewportAspectRatio: Float,
     streamAspectRatio: Float,
-): Pair<Float, Float> {
-    if (!enabled || viewportAspectRatio <= 0f || streamAspectRatio <= 0f) return 1f to 1f
-    return when {
-        viewportAspectRatio > streamAspectRatio ->
-            (viewportAspectRatio / streamAspectRatio).coerceIn(1f, 3f) to 1f
-        viewportAspectRatio < streamAspectRatio ->
-            1f to (streamAspectRatio / viewportAspectRatio).coerceIn(1f, 3f)
-        else -> 1f to 1f
-    }
-}
+): Pair<Float, Float> = streamPresentationScale(
+    if (enabled) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit,
+    viewportAspectRatio,
+    streamAspectRatio,
+)
 
 internal fun streamPinchZoomEnabled(
     touchMouseEnabled: Boolean,

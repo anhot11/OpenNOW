@@ -480,7 +480,7 @@ private fun requestedStreamingFeatures(settings: StreamSettings, profile: Stream
         put("enabledL4S", settings.enableL4S)
         // NVST trueHdr enables the server's AI SDR-to-HDR filter. Native HDR10
         // is requested independently through sdrHdrMode and the display profile.
-        put("trueHdr", profile.hdrEnabled && !settings.experimentalNvst)
+        put("trueHdr", profile.hdrEnabled && settings.trueHdrEnabled && !settings.experimentalNvst)
         put("mouseMovementFlags", 0)
         put("supportedHidDevices", 0)
         put("profile", 0)

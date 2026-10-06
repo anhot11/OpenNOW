@@ -33,12 +33,17 @@ class StreamVideoSurface(context: Context, private val hdr: Boolean) : FrameLayo
     private val sdr = if (hdr) null else SurfaceViewRenderer(context)
     private val surfaceView = sdr ?: SurfaceView(context)
     val holder: SurfaceHolder get() = surfaceView.holder
-    var stretchToFit: Boolean = false
+    var scalingMode: StreamDisplayScalingMode = StreamDisplayScalingMode.Fit
         set(value) {
             if (field != value) {
                 field = value
                 requestLayout()
             }
+        }
+    var stretchToFit: Boolean
+        get() = scalingMode == StreamDisplayScalingMode.Stretch
+        set(value) {
+            scalingMode = if (value) StreamDisplayScalingMode.Stretch else StreamDisplayScalingMode.Fit
         }
     @Volatile internal var hdrTarget: HdrSurfaceTarget? = null
         private set

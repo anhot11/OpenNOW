@@ -450,11 +450,36 @@ class StreamResolutionTest {
 
     @Test
     fun persistedUnsupportedAspectFallsBackToSupportedSixteenByNineMode() {
-        val adjusted = StreamSettings(resolution = "1600x720", aspectRatio = "18:9")
+        val adjusted = StreamSettings(resolution = "1600x720", aspectRatio = "15:9")
             .withResolutionAllowed(SubscriptionInfo(membershipTier = "FREE"), null)
 
         assertEquals("16:9", adjusted.aspectRatio)
         assertEquals("1280x720", adjusted.resolution)
+    }
+
+    @Test
+    fun eighteenByNineAspectSupportsNativeResolutionsOnFreePlan() {
+        val freeSubscription = SubscriptionInfo(membershipTier = "FREE")
+        val adjustedHd = StreamSettings(resolution = "1440x720", aspectRatio = "18:9")
+            .withResolutionAllowed(freeSubscription, null)
+        assertEquals("18:9", adjustedHd.aspectRatio)
+        assertEquals("1440x720", adjustedHd.resolution)
+        assertTrue(adjustedHd.requiresNativeAndroidCloudMatchMode())
+
+        val adjustedFhd = StreamSettings(resolution = "2160x1080", aspectRatio = "18:9")
+            .withResolutionAllowed(freeSubscription, null)
+        assertEquals("18:9", adjustedFhd.aspectRatio)
+        assertEquals("2160x1080", adjustedFhd.resolution)
+        assertTrue(adjustedFhd.requiresNativeAndroidCloudMatchMode())
+    }
+
+    @Test
+    fun alliancePartnerTiersQualifyForPriorityStreamingResolutions() {
+        val allianceTiers = listOf("PREMIUM", "PRO", "VIP", "PLUS", "ADVANCED", "DAYPASS")
+        for (tier in allianceTiers) {
+            val plan = planForMembershipTier(tier)
+            assertEquals("Tier $tier should qualify for Priority plan", StreamResolutionPlan.Priority, plan)
+        }
     }
 
     @Test
@@ -509,8 +534,19 @@ class StreamResolutionTest {
     }
 
     @Test
-    fun freePlanPhoneResolutionFallbackPreservesAspectAndUsesAndroidIdentity() {
+    fun freePlanPhoneResolutionPreserves1080pAndUsesAndroidIdentity() {
         val adjusted = StreamSettings(resolution = "2340x1080", aspectRatio = "19.5:9", fps = 120)
+            .eligibleForAndroidLaunch(SubscriptionInfo(membershipTier = "FREE"), null, androidTvProfile = false)
+
+        assertEquals("2340x1080", adjusted.resolution)
+        assertEquals("19.5:9", adjusted.aspectRatio)
+        assertEquals(60, adjusted.fps)
+        assertTrue(adjusted.requiresNativeAndroidCloudMatchMode())
+    }
+
+    @Test
+    fun freePlanPhoneLowerResolutionPreservesAspectAndUsesAndroidIdentity() {
+        val adjusted = StreamSettings(resolution = "1376x640", aspectRatio = "19.5:9", fps = 60)
             .eligibleForAndroidLaunch(SubscriptionInfo(membershipTier = "FREE"), null, androidTvProfile = false)
 
         assertEquals("1376x640", adjusted.resolution)

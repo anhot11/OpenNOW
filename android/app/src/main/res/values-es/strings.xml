@@ -304,6 +304,16 @@
     <string name="settings_queue_ready_music">Reproducir música al terminar la cola</string>
     <string name="action_mute_music">Silenciar música</string>
     <string name="settings_stretch_stream_to_fit">Estirar la transmisión para rellenar</string>
+    <string name="settings_display_scaling_mode">Modo de escalado de pantalla</string>
+    <string name="settings_display_scaling_mode_desc">Elige cómo se ajusta la transmisión a tu pantalla: Ajustar (proporción original con barras), Estirar (pantalla completa estirada) o Zoom (pantalla completa sin distorsión recortando bordes leves).</string>
+    <string name="display_scaling_fit">Ajustar (Original)</string>
+    <string name="display_scaling_stretch">Estirar (Completa)</string>
+    <string name="display_scaling_zoom">Zoom (Recortar)</string>
+    <string name="settings_hdr_max_luminance">Brillo máximo HDR</string>
+    <string name="settings_hdr_max_luminance_desc">Luminancia máxima objetivo para el mapeo de tonos. Automático lee los metadatos de fábrica de tu pantalla.</string>
+    <string name="settings_hdr_luminance_auto">Automático (Por defecto)</string>
+    <string name="settings_true_hdr">NVIDIA TrueHDR</string>
+    <string name="settings_true_hdr_desc">Usa el filtro de IA en el servidor para reconstruir rango HDR en juegos que solo admiten SDR.</string>
     <string name="settings_session_counter">Temporizador de sesión inteligente</string>
     <string name="settings_thanks_body">Gracias a quienes ayudan a mejorar OpenNOW para todos.</string>
     <string name="settings_thanks_darkevilpt">DarkevilPT</string>

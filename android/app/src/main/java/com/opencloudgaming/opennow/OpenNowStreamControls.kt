@@ -1283,14 +1283,19 @@ internal fun StreamControlsPanel(
             }
             item {
                 ControlSection(stringResource(R.string.stream_panel_section_display)) {
-                    ControlSwitchRow(
-                        label = stringResource(R.string.stream_panel_stretch_to_fit),
-                        checked = settings.stretchStreamToFit,
-                        onCheckedChange = {
+                    val currentScalingMode = settings.effectiveDisplayScalingMode
+                    val scalingModeLabel = when (currentScalingMode) {
+                        StreamDisplayScalingMode.Fit -> stringResource(R.string.display_scaling_fit)
+                        StreamDisplayScalingMode.Stretch -> stringResource(R.string.display_scaling_stretch)
+                        StreamDisplayScalingMode.Zoom -> stringResource(R.string.display_scaling_zoom)
+                    }
+                    ControlActionRow(
+                        label = stringResource(R.string.settings_display_scaling_mode),
+                        actionLabel = scalingModeLabel,
+                        onClick = {
                             onButtonTone()
                             onStretchToFitToggle()
                         },
-                        value = onOffLabel(settings.stretchStreamToFit),
                     )
                     ControlSwitchRow(
                         label = stringResource(R.string.stream_panel_audio),
