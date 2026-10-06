@@ -583,7 +583,7 @@
     <string name="settings_av1_ten_bit_downgraded">AV1 uses 8-bit color in OpenNOW. Switched to 8-bit and disabled HDR. Choose H.265 or H.264 to use 10-bit.</string>
     <string name="settings_hdr">HDR (Performance &amp; Ultimate)</string>
     <string name="settings_hdr_desc">HDR10 requires a compatible display and hardware H.265 decoder, up to 4K at 60 FPS or more depending on your plan. Video uses the display’s HDR processing; sharpening is unavailable in HDR.</string>
-    <string name="settings_hdr_android_handheld_hint">The display or system did not report full HDR10 capabilities. You can enable &apos;Force HDR&apos; to request HDR streaming anyway.</string>
+    <string name="settings_hdr_android_handheld_hint">The display or system did not report full HDR10 capabilities. You can enable Force HDR to request HDR streaming anyway.</string>
     <string name="settings_hdr_android_tv_compatibility_hint">HDR requires an HDR10 display reporting its luminance range and hardware H.265 Main10, up to 3840 x 2160 at 60 FPS.</string>
     <string name="settings_force_hdr">Force HDR</string>
     <string name="settings_force_hdr_desc">Always requests HDR10 streaming from GFN servers, bypassing display capability and membership tier checks.</string>

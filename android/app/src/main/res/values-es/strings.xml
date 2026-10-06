@@ -242,7 +242,7 @@
     <string name="settings_av1_ten_bit_hint">AV1 usa color de 8 bits. Elige H.265 para 10 bits; HDR está limitado a modos compatibles de Android TV.</string>
     <string name="settings_av1_ten_bit_downgraded">AV1 usa color de 8 bits en OpenNOW. Se cambió a 8 bits y se desactivó HDR. Elige H.265 o H.264 para usar 10 bits.</string>
     <string name="settings_hdr">HDR (Performance &amp; Ultimate)</string>
-    <string name="settings_hdr_android_handheld_hint">La pantalla o el sistema no reportaron capacidades HDR10 completas. Puedes activar &apos;Forzar HDR&apos; para solicitar transmisión HDR de todas formas.</string>
+    <string name="settings_hdr_android_handheld_hint">La pantalla o el sistema no reportaron capacidades HDR10 completas. Puedes activar «Forzar HDR» para solicitar transmisión HDR de todas formas.</string>
     <string name="settings_hdr_android_tv_compatibility_hint">HDR en Android TV requiere H.265 a 60 FPS o menos y una resolución máxima de 3840 × 2160.</string>
     <string name="settings_force_hdr">Forzar HDR</string>
     <string name="settings_force_hdr_desc">Solicita siempre transmisión en HDR10 a los servidores de GFN, omitiendo las comprobaciones de compatibilidad de pantalla y plan.</string>
