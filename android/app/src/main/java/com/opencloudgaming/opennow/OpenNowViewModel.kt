@@ -2657,11 +2657,16 @@ class OpenNowViewModel(application: Application) : AndroidViewModel(application)
         // Warn before launching rather than after: GFN accepts the session and then fails, or
         // silently downgrades, and from the player's side that is indistinguishable from a bug.
         if (!skipMembershipNotice) {
-            val requirement = gameMembershipRequirement(
-                game = game,
-                subscriptionInfo = state.value.subscriptionInfo,
-                fallbackMembershipTier = state.value.authSession?.user?.membershipTier,
-            )
+            val isForced = state.value.settings.stream.forceResolution || state.value.settings.stream.forceHdr
+            val requirement = if (isForced) {
+                null
+            } else {
+                gameMembershipRequirement(
+                    game = game,
+                    subscriptionInfo = state.value.subscriptionInfo,
+                    fallbackMembershipTier = state.value.authSession?.user?.membershipTier,
+                )
+            }
             if (requirement != null) {
                 recordDebugEvent(
                     "launch",
@@ -2728,8 +2733,10 @@ class OpenNowViewModel(application: Application) : AndroidViewModel(application)
             }
             val application = getApplication<Application>()
             val currentSettings = state.value.settings
+            val isForced = currentSettings.stream.forceResolution || currentSettings.stream.forceHdr
             if (
                 !skipBatteryOptimizationPrompt &&
+                !isForced &&
                 shouldPromptForBatteryOptimization(
                     deviceHasBattery = deviceHasBattery(application),
                     ignoringBatteryOptimizations = isIgnoringBatteryOptimizations(application),

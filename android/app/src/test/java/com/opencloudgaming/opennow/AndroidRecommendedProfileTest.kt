@@ -199,6 +199,25 @@ class AndroidRecommendedProfileTest {
         assertTrue(recommended.performanceOverridesComparedTo(recommended, report = null).isEmpty())
     }
 
+    @Test
+    fun forcedResolutionAndHdrSuppressPerformanceOverrides() {
+        val recommended = StreamSettings(
+            resolution = "1600x720",
+            fps = 60,
+            maxBitrateMbps = 35,
+            hdrEnabled = false,
+        )
+        val forced = recommended.copy(
+            resolution = "2400x1080",
+            fps = 120,
+            maxBitrateMbps = 50,
+            hdrEnabled = true,
+            forceResolution = true,
+            forceHdr = true,
+        )
+        assertTrue(forced.performanceOverridesComparedTo(recommended, report = null).isEmpty())
+    }
+
     private fun codecReport(
         androidTv: Boolean = false,
         lowPower: Boolean = false,

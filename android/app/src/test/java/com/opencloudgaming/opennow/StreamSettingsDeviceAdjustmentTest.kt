@@ -704,6 +704,28 @@ class StreamSettingsDeviceAdjustmentTest {
     }
 
     @Test
+    fun forcedResolutionAndHdrSuppressLowPowerWarnings() {
+        val settings = StreamSettings(
+            resolution = "2400x1080",
+            aspectRatio = "20:9",
+            fps = 120,
+            maxBitrateMbps = 50,
+            hdrEnabled = true,
+            forceResolution = true,
+            forceHdr = true,
+        )
+        val report = codecReport(
+            VideoCodec.H264,
+            hardwareDecoder = true,
+            realtimeSafe = true,
+            lowPower = true,
+            constrainedRuntime = true,
+        )
+
+        assertTrue(settings.lowPowerPerformanceWarningReasons(report).isEmpty())
+    }
+
+    @Test
     fun preservesHardwareH265ForLowPowerAndroidTvInsideSafeLimits() {
         val adjusted = StreamSettings(
             resolution = "3840x2160",

@@ -51,6 +51,7 @@ internal fun shouldOfferLowerSettingsRetry(
     error: Throwable,
     requestedSettings: StreamSettings,
 ): Boolean {
+    if (requestedSettings.forceResolution || requestedSettings.forceHdr) return false
     if (requestedSettings == requestedSettings.loweredSessionLaunchProfile()) return false
     val cloudMatchFailure = error.cloudMatchRequestStatusException()
     return cloudMatchFailure?.isInternalServerError() == true ||

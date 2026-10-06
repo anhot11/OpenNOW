@@ -2396,31 +2396,32 @@ private fun StreamSettings.androidWebRtcColorQuality(): ColorQuality {
 }
 
 private fun StreamSettings.withStableAndroidCloudMatchProfile(): StreamSettings {
-    val normalizedResolution = normalizeStreamResolutionForAspect(resolution, aspectRatio)
+    val normalizedResolution = if (forceResolution) resolution else normalizeStreamResolutionForAspect(resolution, aspectRatio)
     // Keep the observed low 21:9 mode at its supported 60 FPS profile.
-    val geometryCompatibleFps = if (normalizedResolution == LOW_ULTRAWIDE_STREAM_RESOLUTION) {
+    val geometryCompatibleFps = if (!forceResolution && normalizedResolution == LOW_ULTRAWIDE_STREAM_RESOLUTION) {
         LOW_ULTRAWIDE_STREAM_MAX_FPS
     } else {
         MAX_ULTIMATE_STREAM_FPS
     }
-    val (resWidth, resHeight) = parseResolutionPixels(normalizedResolution)
+    val (resWidth, resHeight) = parseResolutionPixelsOrNull(normalizedResolution) ?: (1920 to 1080)
     return copy(
         resolution = normalizedResolution,
-        fps = minOf(fps, geometryCompatibleFps),
-        hdrEnabled = hdrEnabled && codec == VideoCodec.H265 && fps <= 120 && resWidth <= 3840 && resHeight <= 2160,
+        fps = if (forceResolution) fps else minOf(fps, geometryCompatibleFps),
+        hdrEnabled = if (forceHdr) true else (hdrEnabled && codec == VideoCodec.H265 && fps <= 120 && resWidth <= 3840 && resHeight <= 2160),
     )
 }
 
 internal fun StreamSettings.lowPowerPerformanceWarningReasons(report: RuntimeCodecReport?): List<String> {
+    if (forceResolution && forceHdr) return emptyList()
     if (report?.lowPowerGpuProfile != true && report?.constrainedRuntimeProfile != true) return emptyList()
 
     val normalizedResolution = normalizeStreamResolutionForAspect(resolution, aspectRatio)
     val (width, height) = parseResolutionPixels(normalizedResolution)
     return buildList {
-        if (width * height > LOW_POWER_RECOMMENDED_PIXEL_COUNT) add("$normalizedResolution resolution")
-        if (fps > LOW_POWER_RECOMMENDED_FPS) add("$fps FPS")
-        if (maxBitrateMbps > LOW_POWER_RECOMMENDED_BITRATE_MBPS) add("$maxBitrateMbps Mbps bitrate")
-        if (hdrEnabled) add("HDR")
+        if (!forceResolution && width * height > LOW_POWER_RECOMMENDED_PIXEL_COUNT) add("$normalizedResolution resolution")
+        if (!forceResolution && fps > LOW_POWER_RECOMMENDED_FPS) add("$fps FPS")
+        if (!forceResolution && maxBitrateMbps > LOW_POWER_RECOMMENDED_BITRATE_MBPS) add("$maxBitrateMbps Mbps bitrate")
+        if (!forceHdr && hdrEnabled) add("HDR")
         if (streamSharpeningEnabled) add("stream sharpening")
     }
 }

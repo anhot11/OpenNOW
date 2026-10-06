@@ -164,6 +164,8 @@ class LaunchErrorsTest {
         assertFalse(lower.enableL4S)
         assertFalse(lower.experimentalNvst)
         assertFalse(shouldOfferLowerSettingsRetry(error, lower))
+        assertFalse(shouldOfferLowerSettingsRetry(error, demanding.copy(forceResolution = true)))
+        assertFalse(shouldOfferLowerSettingsRetry(error, demanding.copy(forceHdr = true)))
         assertFalse(shouldOfferLowerSettingsRetry(IllegalStateException("Network unavailable"), demanding))
     }
 }

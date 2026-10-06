@@ -52,6 +52,7 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Tv
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -830,25 +831,43 @@ private fun SettingsContent(
                     viewModel.applyStreamPreset(StreamPreset.valueOf(value))
                 }
                 state.recommendedStreamSettings?.let { recommended ->
+                    val displayRecommendation = if (settings.stream.forceResolution || settings.stream.forceHdr) {
+                        recommended.copy(
+                            resolution = if (settings.stream.forceResolution) settings.stream.resolution else recommended.resolution,
+                            fps = if (settings.stream.forceResolution) settings.stream.fps else recommended.fps,
+                            hdrEnabled = if (settings.stream.forceHdr) settings.stream.hdrEnabled else recommended.hdrEnabled,
+                        )
+                    } else {
+                        recommended
+                    }
                     Text(
                         stringResource(
                             R.string.settings_detected_recommendation,
-                            recommended.recommendationSummary(),
+                            displayRecommendation.recommendationSummary(),
                         ),
                         color = SettingsTextMuted,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
+                val isForced = settings.stream.forceResolution || settings.stream.forceHdr
                 val recommendationOverrides = settings.stream.performanceOverridesComparedTo(
                     recommended = state.recommendedStreamSettings,
                     report = state.codecReport,
                 )
                 val performanceWarningReasons = settings.stream.lowPowerPerformanceWarningReasons(state.codecReport)
                 val performanceWarnings = recommendationOverrides.ifEmpty { performanceWarningReasons }
-                if (performanceWarnings.isNotEmpty()) {
+                if (!isForced && performanceWarnings.isNotEmpty()) {
                     DeviceStreamRecommendationWarning(
                         reasons = performanceWarnings,
                         recommended = state.recommendedStreamSettings,
+                        onDismissAndForce = {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(
+                                    forceResolution = true,
+                                    forceHdr = if (s.hdrEnabled) true else s.forceHdr,
+                                )
+                            }
+                        },
                     )
                 }
                 val isResolutionForced = settings.stream.forceResolution
@@ -2078,6 +2097,7 @@ private fun SettingsContent(
 private fun DeviceStreamRecommendationWarning(
     reasons: List<String>,
     recommended: StreamSettings?,
+    onDismissAndForce: () -> Unit,
 ) {
     val warningColor = Color(0xffffc266)
     Surface(
@@ -2109,6 +2129,20 @@ private fun DeviceStreamRecommendationWarning(
                 color = SettingsTextMuted,
                 style = MaterialTheme.typography.bodySmall,
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OutlinedButton(
+                    onClick = onDismissAndForce,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = warningColor,
+                    ),
+                    border = BorderStroke(1.dp, warningColor.copy(alpha = 0.6f)),
+                ) {
+                    Text(stringResource(R.string.settings_dismiss_and_force))
+                }
+            }
         }
     }
 }

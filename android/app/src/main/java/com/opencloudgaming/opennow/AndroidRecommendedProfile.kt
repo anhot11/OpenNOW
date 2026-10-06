@@ -170,6 +170,7 @@ internal fun StreamSettings.performanceOverridesComparedTo(
     recommended: StreamSettings?,
     report: RuntimeCodecReport?,
 ): List<String> {
+    if (forceResolution && forceHdr) return emptyList()
     recommended ?: return emptyList()
     val selectedResolution = normalizeStreamResolutionForAspect(resolution, aspectRatio)
     val recommendedResolution = normalizeStreamResolutionForAspect(recommended.resolution, recommended.aspectRatio)
@@ -181,19 +182,20 @@ internal fun StreamSettings.performanceOverridesComparedTo(
 
     return buildList {
         if (
+            !forceResolution &&
             selectedPixelCount != null && recommendedPixelCount != null &&
             selectedPixelCount > recommendedPixelCount
         ) {
             add("$selectedResolution resolution (recommended $recommendedResolution)")
         }
-        if (fps > recommended.fps) add("$fps FPS (recommended ${recommended.fps})")
-        if (maxBitrateMbps > recommended.maxBitrateMbps) {
+        if (!forceResolution && fps > recommended.fps) add("$fps FPS (recommended ${recommended.fps})")
+        if (!forceResolution && maxBitrateMbps > recommended.maxBitrateMbps) {
             add("$maxBitrateMbps Mbps bitrate (recommended ${recommended.maxBitrateMbps})")
         }
-        if (hdrEnabled && !recommended.hdrEnabled) add("HDR")
+        if (!forceHdr && hdrEnabled && !recommended.hdrEnabled) add("HDR")
         // HDR implies a ten-bit transport, but it already has its own user-facing override label.
         // Only call out 10-bit color when the separate SDR color-quality choice is responsible.
-        if (!hdrEnabled && colorQuality.isTenBit() &&
+        if (!forceHdr && !hdrEnabled && colorQuality.isTenBit() &&
             (recommended.hdrEnabled || !recommended.colorQuality.isTenBit())) add("10-bit color")
         if (streamSharpeningEnabled && !recommended.streamSharpeningEnabled) add("stream sharpening")
         if (

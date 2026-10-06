@@ -248,6 +248,7 @@
     <string name="settings_force_hdr_desc">Solicita siempre transmisión en HDR10 a los servidores de GFN, omitiendo las comprobaciones de compatibilidad de pantalla y plan.</string>
     <string name="settings_force_resolution">Forzar resolución</string>
     <string name="settings_force_resolution_desc">Evita que la resolución y los FPS se limiten por el tipo de cuenta o las características de la pantalla. Usa el perfil de escritorio nativo para evitar reducciones automáticas de GFN.</string>
+    <string name="settings_dismiss_and_force">Omitir y forzar ajustes</string>
     <string name="settings_region">Región</string>
     <string name="settings_session_proxy">Proxy de sesión</string>
     <string name="settings_session_proxy_hint">Enruta la creación de sesiones GFN y las consultas de cola a través de este proxy. Déjalo desactivado para solicitudes directas.</string>
