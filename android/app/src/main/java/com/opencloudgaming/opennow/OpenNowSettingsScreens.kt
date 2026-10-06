@@ -908,7 +908,6 @@ private fun SettingsContent(
                         ChoiceMenuOption(StreamDisplayScalingMode.Stretch.name, stringResource(R.string.display_scaling_stretch)),
                         ChoiceMenuOption(StreamDisplayScalingMode.Zoom.name, stringResource(R.string.display_scaling_zoom)),
                     ),
-                    selected = settings.effectiveDisplayScalingMode.name,
                     selectedLabel = when (settings.effectiveDisplayScalingMode) {
                         StreamDisplayScalingMode.Fit -> stringResource(R.string.display_scaling_fit)
                         StreamDisplayScalingMode.Stretch -> stringResource(R.string.display_scaling_stretch)
@@ -1047,7 +1046,6 @@ private fun SettingsContent(
                     ChoiceMenuRow(
                         label = stringResource(R.string.settings_hdr_max_luminance),
                         options = hdrLuminanceOptions,
-                        selected = settings.stream.hdrMaxLuminanceNits.toString(),
                         selectedLabel = if (settings.stream.hdrMaxLuminanceNits == 0) {
                             stringResource(R.string.settings_hdr_luminance_auto)
                         } else {
