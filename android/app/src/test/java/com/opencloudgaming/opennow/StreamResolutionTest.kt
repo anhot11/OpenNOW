@@ -464,7 +464,7 @@ class StreamResolutionTest {
             .withResolutionAllowed(freeSubscription, null)
         assertEquals("18:9", adjustedHd.aspectRatio)
         assertEquals("1440x720", adjustedHd.resolution)
-        assertTrue(adjustedHd.requiresNativeAndroidCloudMatchMode())
+        assertFalse(adjustedHd.requiresNativeDesktopCloudMatchMode())
 
         val adjustedFhd = StreamSettings(resolution = "2160x1080", aspectRatio = "18:9")
             .withResolutionAllowed(freeSubscription, null)
@@ -475,7 +475,7 @@ class StreamResolutionTest {
 
     @Test
     fun alliancePartnerTiersQualifyForPriorityStreamingResolutions() {
-        val allianceTiers = listOf("PREMIUM", "PRO", "VIP", "PLUS", "ADVANCED", "DAYPASS")
+        val allianceTiers = listOf("PREMIUM", "PRO", "VIP", "PLUS", "ADVANCED")
         for (tier in allianceTiers) {
             val plan = planForMembershipTier(tier)
             assertEquals("Tier $tier should qualify for Priority plan", StreamResolutionPlan.Priority, plan)

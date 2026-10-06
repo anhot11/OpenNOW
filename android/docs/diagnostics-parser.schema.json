@@ -1385,6 +1385,12 @@
                 "hdrEnabled": {
                     "type": "boolean"
                 },
+                "hdrMaxLuminanceNits": {
+                    "type": "integer"
+                },
+                "trueHdrEnabled": {
+                    "type": "boolean"
+                },
                 "region": {
                     "type": "string"
                 },

@@ -774,13 +774,8 @@ internal fun streamResolutionPixels(settings: StreamSettings): Pair<Int, Int> {
     return parseResolutionPixels(normalizeStreamResolutionForAspect(settings.resolution, settings.aspectRatio))
 }
 
-internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean {
-    if (requiresNativeDesktopCloudMatchMode()) return false
-    val (width, _) = streamResolutionPixels(this)
-    return streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION) ||
-        aspectRatio in setOf("18:9", "19.5:9", "20:9") ||
-        (aspectRatio == "21:9" && width <= 1680)
-}
+internal fun StreamSettings.requiresNativeAndroidCloudMatchMode(): Boolean =
+    streamResolutionPixels(this) == parseResolutionPixels(PORTAL_STREAM_RESOLUTION)
 
 internal fun StreamSettings.requiresNativeDesktopCloudMatchMode(): Boolean {
     val (width, height) = streamResolutionPixels(this)
@@ -1438,7 +1433,7 @@ internal fun planForMembershipTier(membershipTier: String?): StreamResolutionPla
         normalized.contains("ULTIMATE") || normalized.contains("RTX3080") -> StreamResolutionPlan.Ultimate
         normalized.contains("PRIORITY") || normalized.contains("PERFORMANCE") || normalized.contains("FOUNDERS") ||
             normalized.contains("PREMIUM") || normalized.contains("PRO") || normalized.contains("VIP") ||
-            normalized.contains("PLUS") || normalized.contains("ADVANCED") || normalized.contains("DAYPASS") -> StreamResolutionPlan.Priority
+            normalized.contains("PLUS") || normalized.contains("ADVANCED") -> StreamResolutionPlan.Priority
         else -> StreamResolutionPlan.Free
     }
 }
