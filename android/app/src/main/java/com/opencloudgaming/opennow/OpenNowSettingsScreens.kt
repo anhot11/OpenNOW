@@ -160,8 +160,9 @@ internal fun androidCodecChoicePresentation(
     comingSoonLabel: String,
     unavailableLabel: String,
 ): AndroidCodecChoicePresentation {
+    val isForced = stream.forceResolution || stream.forceHdr
     val settingsAvailableStream = stream.withAndroidSettingsAvailability()
-    val effectiveCodec = settingsAvailableStream.adjustedForDevice(codecReport).codec
+    val effectiveCodec = if (isForced) stream.codec else settingsAvailableStream.adjustedForDevice(codecReport).codec
     return AndroidCodecChoicePresentation(
         options = VideoCodec.entries.map { codec ->
             val launchUsable = codecReport
@@ -170,7 +171,7 @@ internal fun androidCodecChoicePresentation(
                 ?.streamingDecoderUsableForLaunch()
                 ?: true
             val settingsAvailable = codec.availableForAndroidSettings()
-            val available = settingsAvailable && launchUsable
+            val available = isForced || (settingsAvailable && launchUsable)
             ChoiceMenuOption(
                 value = codec.name,
                 label = codec.name,
@@ -182,7 +183,7 @@ internal fun androidCodecChoicePresentation(
                 },
             )
         },
-        selectedLabel = if (effectiveCodec == stream.codec) {
+        selectedLabel = if (isForced || effectiveCodec == stream.codec) {
             stream.codec.name
         } else {
             "${stream.codec.name} -> ${effectiveCodec.name}"
@@ -985,6 +986,50 @@ private fun SettingsContent(
                 ) {
                     viewModel.updateStreamSettings { s -> s.copy(maxBitrateMbps = it.roundToInt()) }
                 }
+                val networkAdjustmentChoice = when {
+                    !settings.stream.experimentalDynamicNetworkAdjustment -> "off"
+                    settings.stream.experimentalDynamicMinimumBitrateMbps <= 10 -> "optimal_latency"
+                    else -> "balanced"
+                }
+                val networkAdjustmentLabel = when (networkAdjustmentChoice) {
+                    "optimal_latency" -> stringResource(R.string.settings_network_latency_optimal)
+                    "balanced" -> stringResource(R.string.settings_network_balanced)
+                    else -> stringResource(R.string.settings_network_off)
+                }
+                ChoiceMenuRow(
+                    label = stringResource(R.string.settings_adjust_for_network_conditions),
+                    options = listOf(
+                        ChoiceMenuOption("optimal_latency", stringResource(R.string.settings_network_latency_optimal)),
+                        ChoiceMenuOption("balanced", stringResource(R.string.settings_network_balanced)),
+                        ChoiceMenuOption("off", stringResource(R.string.settings_network_off)),
+                    ),
+                    selectedLabel = networkAdjustmentLabel,
+                    description = stringResource(R.string.settings_adjust_for_network_conditions_desc),
+                ) { choice ->
+                    when (choice) {
+                        "optimal_latency" -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(
+                                    experimentalDynamicNetworkAdjustment = true,
+                                    experimentalDynamicMinimumBitrateMbps = 5,
+                                )
+                            }
+                        }
+                        "balanced" -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(
+                                    experimentalDynamicNetworkAdjustment = true,
+                                    experimentalDynamicMinimumBitrateMbps = 15,
+                                )
+                            }
+                        }
+                        else -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(experimentalDynamicNetworkAdjustment = false)
+                            }
+                        }
+                    }
+                }
             }
     CategorySettingsSection(selectedCategory, SettingsCategory.Stream, searchQuery, stringResource(R.string.settings_section_stream_video), "stream", "video", "codec", "color", "hdr", "sharpening", "native streamer", "low latency", "native decoder", "decoder") {
                 val comingSoonLabel = stringResource(R.string.option_coming_soon)
@@ -1005,9 +1050,12 @@ private fun SettingsContent(
                 ) { value ->
                     val selectedCodec = VideoCodec.valueOf(value)
                     val downgradedTenBit = selectedCodec == VideoCodec.AV1 &&
-                        settings.stream.usesTenBitStreamProfile()
+                        settings.stream.usesTenBitStreamProfile() && !settings.stream.forceHdr
                     viewModel.updateStreamSettings { s ->
-                        s.copy(codec = selectedCodec).withCodecColorCompatibility()
+                        s.copy(
+                            codec = selectedCodec,
+                            forceResolution = if (selectedCodec == VideoCodec.H265) true else s.forceResolution,
+                        ).withCodecColorCompatibility()
                     }
                     if (downgradedTenBit) {
                         Toast.makeText(
@@ -1017,12 +1065,17 @@ private fun SettingsContent(
                         ).show()
                     }
                 }
-                val effectiveColorQuality = settingsAvailableStream.withCodecColorCompatibility().colorQuality
+                val isForced = settings.stream.forceResolution || settings.stream.forceHdr
+                val effectiveColorQuality = if (isForced) {
+                    settings.stream.colorQuality
+                } else {
+                    settingsAvailableStream.withCodecColorCompatibility().colorQuality
+                }
                 ChoiceMenuRow(
                     label = stringResource(R.string.settings_color),
                     options = ColorQuality.entries.map { quality ->
-                        val available = quality.availableForCodec(settingsAvailableStream.codec) &&
-                            !(settingsAvailableStream.hdrEnabled && quality.isTenBit())
+                        val available = isForced || (quality.availableForCodec(settingsAvailableStream.codec) &&
+                            !(settingsAvailableStream.hdrEnabled && quality.isTenBit()))
                         ChoiceMenuOption(
                             value = quality.name,
                             label = quality.label,
@@ -1035,15 +1088,19 @@ private fun SettingsContent(
                             },
                         )
                     },
-                    selectedLabel = if (effectiveColorQuality == settings.stream.colorQuality) {
+                    selectedLabel = if (isForced || effectiveColorQuality == settings.stream.colorQuality) {
                         settings.stream.colorQuality.label
                     } else {
                         "${settings.stream.colorQuality.label} -> ${effectiveColorQuality.label}"
                     },
                     description = stringResource(R.string.settings_color_desc),
                 ) { value ->
+                    val chosen = ColorQuality.valueOf(value)
                     viewModel.updateStreamSettings { s ->
-                        s.copy(colorQuality = ColorQuality.valueOf(value)).withCodecColorCompatibility()
+                        s.copy(
+                            colorQuality = chosen,
+                            forceResolution = if (chosen.isTenBit()) true else s.forceResolution,
+                        ).withCodecColorCompatibility()
                     }
                 }
                 if (settingsAvailableStream.codec == VideoCodec.AV1) {
@@ -2028,19 +2085,49 @@ private fun SettingsContent(
                 ) {
                     viewModel.updateStreamSettings { s -> s.copy(experimentalNvst = it) }
                 }
+                val expNetworkAdjustmentChoice = when {
+                    !settings.stream.experimentalDynamicNetworkAdjustment -> "off"
+                    settings.stream.experimentalDynamicMinimumBitrateMbps <= 10 -> "optimal_latency"
+                    else -> "balanced"
+                }
+                val expNetworkAdjustmentLabel = when (expNetworkAdjustmentChoice) {
+                    "optimal_latency" -> stringResource(R.string.settings_network_latency_optimal)
+                    "balanced" -> stringResource(R.string.settings_network_balanced)
+                    else -> stringResource(R.string.settings_network_off)
+                }
                 ChoiceMenuRow(
-                    label = stringResource(R.string.settings_dynamic_network_adjustment),
+                    label = stringResource(R.string.settings_adjust_for_network_conditions),
                     options = listOf(
-                        ChoiceMenuOption("fixed", stringResource(R.string.settings_network_adjustment_fixed)),
-                        ChoiceMenuOption("custom", stringResource(R.string.settings_network_adjustment_custom)),
+                        ChoiceMenuOption("optimal_latency", stringResource(R.string.settings_network_latency_optimal)),
+                        ChoiceMenuOption("balanced", stringResource(R.string.settings_network_balanced)),
+                        ChoiceMenuOption("off", stringResource(R.string.settings_network_off)),
                     ),
-                    selectedLabel = stringResource(
-                        if (settings.stream.experimentalDynamicNetworkAdjustment) R.string.settings_network_adjustment_custom
-                        else R.string.settings_network_adjustment_fixed,
-                    ),
-                    description = stringResource(R.string.settings_dynamic_network_adjustment_desc),
+                    selectedLabel = expNetworkAdjustmentLabel,
+                    description = stringResource(R.string.settings_adjust_for_network_conditions_desc),
                 ) { choice ->
-                    viewModel.updateDynamicNetworkAdjustment(choice == "custom")
+                    when (choice) {
+                        "optimal_latency" -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(
+                                    experimentalDynamicNetworkAdjustment = true,
+                                    experimentalDynamicMinimumBitrateMbps = 5,
+                                )
+                            }
+                        }
+                        "balanced" -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(
+                                    experimentalDynamicNetworkAdjustment = true,
+                                    experimentalDynamicMinimumBitrateMbps = 15,
+                                )
+                            }
+                        }
+                        else -> {
+                            viewModel.updateStreamSettings { s ->
+                                s.copy(experimentalDynamicNetworkAdjustment = false)
+                            }
+                        }
+                    }
                 }
                 if (settings.stream.experimentalDynamicNetworkAdjustment && settings.stream.maxBitrateMbps > 1) {
                     NumberSlider(

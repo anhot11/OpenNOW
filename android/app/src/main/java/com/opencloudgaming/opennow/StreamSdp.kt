@@ -419,7 +419,7 @@ object SdpTools {
             add("a=vqos.resControl.perfHistory.rtcIgnoreOutOfFocusWindowState:1")
             add("a=vqos.resControl.cpmRtc.featureMask:0")
             add("a=vqos.resControl.cpmRtc.enable:0")
-            if (!settings.experimentalDynamicNetworkAdjustment) {
+            if (!settings.experimentalDynamicNetworkAdjustment || settings.forceResolution) {
                 add("a=vqos.resControl.cpmRtc.minResolutionPercent:100")
                 add("a=vqos.resControl.cpmRtc.resolutionChangeHoldonMs:999999")
             }

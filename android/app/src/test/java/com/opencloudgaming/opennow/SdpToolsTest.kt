@@ -289,6 +289,23 @@ class SdpToolsTest {
     }
 
     @Test
+    fun forceResolutionPreservesFullResolutionPercentEvenWithDynamicNetworkAdjustment() {
+        val settings = StreamSettings(
+            resolution = "2400x1080",
+            aspectRatio = "20:9",
+            fps = 120,
+            maxBitrateMbps = 50,
+            forceResolution = true,
+            experimentalDynamicNetworkAdjustment = true,
+            experimentalDynamicMinimumBitrateMbps = 5,
+        )
+        val sdp = SdpTools.buildNvstSdp("", settings, "")
+
+        assertTrue(sdp.contains("a=vqos.resControl.cpmRtc.minResolutionPercent:100"))
+        assertTrue(sdp.contains("a=vqos.resControl.cpmRtc.resolutionChangeHoldonMs:999999"))
+    }
+
+    @Test
     fun nvstSdpHonorsConfiguredBitrateBelowTheRecommendedFiveMbpsFloor() {
         val nvst = buildNvstSdp(StreamSettings(maxBitrateMbps = 1))
 

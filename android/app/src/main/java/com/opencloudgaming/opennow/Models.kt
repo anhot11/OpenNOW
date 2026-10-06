@@ -774,6 +774,9 @@ internal fun AppSettings.withCurrentStreamPresentationDefaults(): AppSettings {
 }
 
 internal fun streamResolutionPixels(settings: StreamSettings): Pair<Int, Int> {
+    if (settings.forceResolution) {
+        parseResolutionPixelsOrNull(settings.resolution)?.let { return it }
+    }
     if (!isKnownStreamResolution(settings.resolution)) {
         parseResolutionPixelsOrNull(settings.resolution)?.let { return it }
     }
@@ -2249,6 +2252,15 @@ private fun RuntimeCodecReport.bestStreamingFallbackCodec(): VideoCodec =
         ?: VideoCodec.H264
 
 internal fun StreamSettings.adjustedForDevice(report: RuntimeCodecReport?): StreamSettings {
+    if (forceResolution || forceHdr) {
+        val compatible = withCodecColorCompatibility().withStableAndroidCloudMatchProfile()
+        return compatible.copy(
+            resolution = resolution,
+            codec = codec,
+            colorQuality = if (colorQuality.isTenBit()) colorQuality else compatible.androidWebRtcColorQuality(),
+        )
+    }
+
     val availableSettings = withAndroidSettingsAvailability()
     if (availableSettings != this) return availableSettings.adjustedForDevice(report)
 
@@ -2387,6 +2399,16 @@ internal fun StreamSettings.loweredSessionLaunchProfile(): StreamSettings =
 private fun StreamSettings.androidWebRtcColorQuality(): ColorQuality {
     val compatible = withCodecColorCompatibility()
     if (compatible.hdrEnabled) return ColorQuality.EightBit420
+    if (forceResolution || forceHdr) {
+        return when (compatible.colorQuality) {
+            ColorQuality.EightBit420,
+            ColorQuality.EightBit444,
+            ColorQuality.TenBit420,
+            ColorQuality.TenBit444,
+            -> compatible.colorQuality
+            else -> ColorQuality.EightBit420
+        }
+    }
     return when (compatible.colorQuality) {
         ColorQuality.EightBit420,
         ColorQuality.EightBit444,

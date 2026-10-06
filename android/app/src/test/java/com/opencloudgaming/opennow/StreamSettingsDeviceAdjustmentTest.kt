@@ -726,6 +726,33 @@ class StreamSettingsDeviceAdjustmentTest {
     }
 
     @Test
+    fun forceResolutionPreservesTenBitColorAndCodecOnLowPowerDevices() {
+        val settings = StreamSettings(
+            resolution = "2400x1080",
+            aspectRatio = "20:9",
+            fps = 120,
+            maxBitrateMbps = 50,
+            codec = VideoCodec.H265,
+            colorQuality = ColorQuality.TenBit420,
+            forceResolution = true,
+        )
+        val report = codecReport(
+            VideoCodec.H265,
+            hardwareDecoder = true,
+            realtimeSafe = true,
+            lowPower = true,
+            constrainedRuntime = true,
+        )
+        val adjusted = settings.adjustedForDevice(report)
+
+        assertEquals("2400x1080", adjusted.resolution)
+        assertEquals(120, adjusted.fps)
+        assertEquals(VideoCodec.H265, adjusted.codec)
+        assertEquals(ColorQuality.TenBit420, adjusted.colorQuality)
+        assertTrue(adjusted.usesTenBitStreamProfile())
+    }
+
+    @Test
     fun preservesHardwareH265ForLowPowerAndroidTvInsideSafeLimits() {
         val adjusted = StreamSettings(
             resolution = "3840x2160",
