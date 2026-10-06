@@ -470,7 +470,7 @@ class StreamResolutionTest {
             .withResolutionAllowed(freeSubscription, null)
         assertEquals("18:9", adjustedFhd.aspectRatio)
         assertEquals("2160x1080", adjustedFhd.resolution)
-        assertTrue(adjustedFhd.requiresNativeAndroidCloudMatchMode())
+        assertTrue(adjustedFhd.requiresNativeDesktopCloudMatchMode())
     }
 
     @Test
@@ -534,14 +534,14 @@ class StreamResolutionTest {
     }
 
     @Test
-    fun freePlanPhoneResolutionPreserves1080pAndUsesAndroidIdentity() {
+    fun freePlanPhoneResolutionPreserves1080pAndUsesDesktopIdentity() {
         val adjusted = StreamSettings(resolution = "2340x1080", aspectRatio = "19.5:9", fps = 120)
             .eligibleForAndroidLaunch(SubscriptionInfo(membershipTier = "FREE"), null, androidTvProfile = false)
 
         assertEquals("2340x1080", adjusted.resolution)
         assertEquals("19.5:9", adjusted.aspectRatio)
         assertEquals(60, adjusted.fps)
-        assertTrue(adjusted.requiresNativeAndroidCloudMatchMode())
+        assertTrue(adjusted.requiresNativeDesktopCloudMatchMode())
     }
 
     @Test
@@ -635,6 +635,7 @@ class StreamResolutionTest {
         )
         assertEquals(listOf("1024x768", "1112x834", "1600x1200"), streamResolutionOptionsForAspect("4:3"))
         assertEquals(listOf("1280x1024"), streamResolutionOptionsForAspect("5:4"))
+        assertEquals(listOf("1440x720", "2160x1080", "2880x1440"), streamResolutionOptionsForAspect("18:9"))
         assertEquals(listOf("1376x640", "2340x1080"), streamResolutionOptionsForAspect("19.5:9"))
         assertEquals(listOf("1600x720", "2400x1080", "3200x1440", "4800x2160"), streamResolutionOptionsForAspect("20:9"))
         assertEquals(listOf("1376x590", "1680x720", "2560x1080", "3440x1440", "5120x2160"), streamResolutionOptionsForAspect("21:9"))
@@ -665,7 +666,7 @@ class StreamResolutionTest {
         val fiveK = streamResolutionChoicesForAspect("16:9").first { it.value == "5120x2880" }
 
         assertEquals(true, fhd.isAvailableFor(freeSubscription, null))
-        assertEquals(false, phoneFhd.isAvailableFor(freeSubscription, null))
+        assertEquals(true, phoneFhd.isAvailableFor(freeSubscription, null))
         assertEquals(true, lowUltrawide.isAvailableFor(freeSubscription, null))
         assertEquals(true, whd.isAvailableFor(freeSubscription, null))
         assertEquals(false, wfhd.isAvailableFor(freeSubscription, null))
