@@ -1432,7 +1432,7 @@ internal fun GameInfo.hasPremiumMembershipMarker(): Boolean =
 private fun normalizeMembershipTier(membershipTier: String?): String =
     membershipTier.orEmpty().uppercase(Locale.US).replace(NON_ALNUM_UPPER_RUN, "")
 
-private fun planForMembershipTier(membershipTier: String?): StreamResolutionPlan {
+internal fun planForMembershipTier(membershipTier: String?): StreamResolutionPlan {
     val normalized = normalizeMembershipTier(membershipTier)
     return when {
         normalized.contains("ULTIMATE") || normalized.contains("RTX3080") -> StreamResolutionPlan.Ultimate
