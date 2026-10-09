@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenNOW</string>
+    <string name="app_name">new OpenNow</string>
     <string name="status_starting_opennow">正在启动 OpenNOW</string>
     <string name="login_with_provider">使用 %1$s 登录</string>
     <string name="login_tv_start">在另一台设备上使用 %1$s 登录</string>

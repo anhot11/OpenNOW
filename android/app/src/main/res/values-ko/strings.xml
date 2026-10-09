@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenNOW</string>
+    <string name="app_name">new OpenNow</string>
     <string name="status_starting_opennow">OpenNOW 시작 중</string>
     <string name="login_with_provider">%1$s 계정으로 로그인</string>
     <string name="login_tv_start">다른 기기에서 %1$s 계정으로 로그인</string>

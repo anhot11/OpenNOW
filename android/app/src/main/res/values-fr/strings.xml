@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenNOW</string>
+    <string name="app_name">new OpenNow</string>
     <string name="status_starting_opennow">Démarrage d’OpenNOW</string>
     <string name="login_with_provider">Se connecter avec %1$s</string>
     <string name="login_tv_start">Se connecter sur un autre appareil avec %1$s</string>
